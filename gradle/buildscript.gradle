@@ -1,0 +1,24 @@
+// Executed in context of buildscript
+repositories {
+    // Repo in addition to maven central
+    repositories {
+        maven { url 'http://dl.bintray.com/content/netflixoss/external-gradle-plugins/' } // For gradle-release
+        maven { url 'http://dl.bintray.com/jfrog/jfrog-jars' } // For artifactory plugin
+        maven {
+            name 'Gradle Shadow'
+            url 'http://dl.bintray.com/content/johnrengelman/gradle-plugins'
+        }
+    }
+
+}
+dependencies {
+    classpath 'net.saliman:gradle-cobertura-plugin:1.1.2'
+    classpath 'gradle-release:gradle-release:1.1.5'
+    classpath 'org.ajoberstar:gradle-git:0.5.0'
+    classpath 'com.google.guava:guava:13.0.1'
+    classpath 'org.apache.httpcomponents:httpcore:4.2.2'
+    classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:2.2.3'
+    classpath 'commons-lang:commons-lang:2.5'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+    classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
+}

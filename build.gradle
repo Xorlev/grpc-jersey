@@ -1,0 +1,198 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    apply from: file('gradle/buildscript.gradle'), to: buildscript
+}
+
+plugins {
+    id 'idea'
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '1.2.2'
+}
+
+ext {
+    grpcVersion = "1.0.0"
+    lombokVersion = "1.16.10"
+    protobufVersion = "3.1.0"
+}
+
+allprojects {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+}
+
+apply from: file('gradle/release.gradle')
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven'
+    apply plugin: 'project-report'
+
+    group = "com.fullcontact.${rootProject.name}"
+
+    configurations.all {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'log4j', module: 'log4j'
+    }
+
+    configurations {
+        provided
+    }
+
+    sourceSets {
+        main {
+            compileClasspath += configurations.provided
+            runtimeClasspath -= configurations.provided
+        }
+        test {
+            compileClasspath += configurations.provided
+            runtimeClasspath += configurations.provided
+        }
+    }
+
+    configurations.compile {
+        // XXX a lot of dependencies depend on lombok as a compile time dep
+        // when they should only depend on it as "provided" (or not transitively
+        // at all). Until they are fixed, explicitly exclude it.
+        exclude group: 'org.projectlombok', module: 'lombok'
+    }
+
+    dependencies {
+        provided "org.projectlombok:lombok:${lombokVersion}"
+        compile 'org.slf4j:slf4j-api:1.7.10'
+
+        testCompile "junit:junit:4.11"
+        testCompile "org.easymock:easymock:3.4"
+        testCompile 'org.powermock:powermock-api-easymock:1.6.2'
+        testCompile('ch.qos.logback:logback-classic:1.0.13')
+        testCompile('ch.qos.logback:logback-core:1.0.13')
+    }
+
+    test {
+        maxParallelForks = 5
+        forkEvery = 5
+        exclude '**/functional/**'
+        exclude '**/deploygate/**'
+    }
+}
+
+project(":jersey-rpc-support") {
+    apply plugin: 'com.google.protobuf'
+    apply plugin: 'artifactory'
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
+    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc");
+
+    dependencies {
+        compile "com.google.protobuf:protobuf-java:${protobufVersion}"
+        compile "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+        compile "io.grpc:grpc-protobuf:${grpcVersion}"
+        compile "io.grpc:grpc-stub:${grpcVersion}"
+        compile "javax.ws.rs:javax.ws.rs-api:2.0.1"
+    }
+
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+    }
+}
+
+project(":protoc-gen-jersey") {
+    apply plugin: 'artifactory'
+    apply plugin: 'com.google.protobuf'
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
+    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc");
+    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/jersey");
+
+    dependencies {
+        compile project(':jersey-rpc-support')
+        compile "com.google.protobuf:protobuf-java:${protobufVersion}"
+        compile "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+        compile "io.grpc:grpc-protobuf:${grpcVersion}"
+        compile "io.grpc:grpc-stub:${grpcVersion}"
+        compile "com.github.spullara.mustache.java:compiler:0.9.4"
+    }
+
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
+        }
+    }
+
+    task buildArtifacts(type: Copy) {
+        from("$buildDir") {
+            rename 'protoc-gen-jersey$', '$0-osx-x86_64.exe'
+        }
+        from("$buildDir") {
+            rename 'protoc-gen-jersey$', '$0-linux-x86_64.exe'
+        }
+        into buildDir
+    }
+
+    artifacts {
+        archives("$buildDir/protoc-gen-jersey" as File) {
+            classifier "osx-x86_64"
+            type "exe"
+            extension "exe"
+            builtBy buildArtifacts
+        }
+        archives("$buildDir/protoc-gen-jersey" as File) {
+            classifier "linux-x86_64"
+            type "exe"
+            extension "exe"
+            builtBy buildArtifacts
+        }
+    }
+
+    ext.mainClassName = 'com.fullcontact.rpc.jersey.Main'
+    shadowJar {
+        mergeServiceFiles()
+
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+
+        manifest {
+            attributes("Main-Class": mainClassName,
+                "Implementation-Version": version)
+        }
+        archiveName = "protoc-gen-jersey"
+        destinationDir = buildDir
+    }
+
+    task prependShellStub(type: Exec) {
+        workingDir = projectDir
+
+        commandLine './prepend-stub.sh', buildDir
+    }
+
+    prependShellStub.dependsOn(shadowJar)
+    buildArtifacts.dependsOn(shadowJar)
+    buildArtifacts.dependsOn(prependShellStub)
+    shadowJar.finalizedBy(prependShellStub)
+}

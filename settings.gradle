@@ -1,0 +1,4 @@
+rootProject.name = 'grpc-jersey'
+
+include 'jersey-rpc-support'
+include 'protoc-gen-jersey'
