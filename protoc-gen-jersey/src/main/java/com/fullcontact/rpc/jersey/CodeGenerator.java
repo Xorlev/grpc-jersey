@@ -169,7 +169,8 @@ public class CodeGenerator {
             // TODO(xorlev): check for URL overlap
             // TODO(xorlev): handle full paths
             String bodyFieldPath = Strings.emptyToNull(rule.getBody());
-            if(bodyFieldPath != null) {
+
+            if(bodyFieldPath != null && !bodyFieldPath.equals("*")) {
                 ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor = ProtobufDescriptorJavaUtil
                     .fieldPath(inputDescriptor, bodyFieldPath);
                 if(fieldDescriptor.isEmpty()) {
