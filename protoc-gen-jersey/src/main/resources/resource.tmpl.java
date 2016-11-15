@@ -1,7 +1,7 @@
 package {{javaPackage}};
 
 import com.fullcontact.rpc.jersey.JerseyStreamObserver;
-import com.fullcontact.rpc.jersey.ParamParser;
+import com.fullcontact.rpc.jersey.RequestParser;
 import com.fullcontact.rpc.jersey.GrpcErrorUtil;
 
 import com.google.protobuf.Descriptors;
@@ -29,23 +29,27 @@ public class {{className}} {
             @PathParam("{{name}}") String {{nameSanitized}},
             {{/pathParams}}
             @Context UriInfo uriInfo,
+            {{#parseHeaders}}
             @Context HttpHeaders headers,
-{{#bodyFieldPath}}
+            {{/parseHeaders}}
+            {{#bodyFieldPath}}
             String body,
 {{/bodyFieldPath}}
             @Suspended final AsyncResponse asyncResponse) throws IOException {
         {{requestType}}.Builder r = {{requestType}}.newBuilder();
 
         try {
-            stub = ParamParser.parseHeaders(headers, stub);
+            {{#parseHeaders}}
+            stub = RequestParser.parseHeaders(headers, stub);
+            {{/parseHeaders}}
             {{#bodyFieldPath}}
-            ParamParser.handleBody("{{bodyFieldPath}}",r,body);
+            RequestParser.handleBody("{{bodyFieldPath}}",r,body);
             {{/bodyFieldPath}}
             {{^bodyFieldPath}}
-            ParamParser.parseQueryParams(uriInfo,r);
+            RequestParser.parseQueryParams(uriInfo,r);
             {{/bodyFieldPath}}
             {{#pathParams}}
-            ParamParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
+            RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
             {{/pathParams}}
         } catch(Exception e) {
             asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(e));
