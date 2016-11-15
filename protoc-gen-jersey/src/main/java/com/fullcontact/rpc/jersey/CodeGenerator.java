@@ -36,10 +36,10 @@ import java.util.stream.Collectors;
  * @author Michael Rose (xorlev)
  */
 public class CodeGenerator {
-    private Boolean isProxy;
+
     public PluginProtos.CodeGeneratorResponse generate(PluginProtos.CodeGeneratorRequest request)
             throws Descriptors.DescriptorValidationException {
-        isProxy = ("proxy".equals(request.getParameter()));
+        Boolean isProxy = ("proxy".equals(request.getParameter()));
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
@@ -82,7 +82,7 @@ public class CodeGenerator {
             }
 
             if(!toGenerate.isEmpty())
-                generateResource(response, lookup, p, toGenerate);
+                generateResource(response, lookup, p, toGenerate, isProxy);
         }
 
         return response.build();
@@ -92,7 +92,8 @@ public class CodeGenerator {
             PluginProtos.CodeGeneratorResponse.Builder response,
             Map<String, Descriptors.Descriptor> lookup,
             DescriptorProtos.FileDescriptorProto p,
-            List<ServiceAndMethod> generate) {
+            List<ServiceAndMethod> generate,
+            Boolean isProxy) {
         DescriptorProtos.ServiceDescriptorProto serviceDescriptor = generate.get(0).getServiceDescriptor();
         String packageName = ProtobufDescriptorJavaUtil.javaPackage(p);
         String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(serviceDescriptor);
