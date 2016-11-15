@@ -18,6 +18,7 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
 import lombok.Value;
 
+
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,10 +36,11 @@ import java.util.stream.Collectors;
  * @author Michael Rose (xorlev)
  */
 public class CodeGenerator {
+
     public PluginProtos.CodeGeneratorResponse generate(PluginProtos.CodeGeneratorRequest request)
             throws Descriptors.DescriptorValidationException {
+        Boolean isProxy = ("proxy".equals(request.getParameter()));
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
-
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
         List<Descriptors.FileDescriptor> fds = Lists.newArrayList(
@@ -80,7 +82,7 @@ public class CodeGenerator {
             }
 
             if(!toGenerate.isEmpty())
-                generateResource(response, lookup, p, toGenerate);
+                generateResource(response, lookup, p, toGenerate, isProxy);
         }
 
         return response.build();
@@ -90,11 +92,14 @@ public class CodeGenerator {
             PluginProtos.CodeGeneratorResponse.Builder response,
             Map<String, Descriptors.Descriptor> lookup,
             DescriptorProtos.FileDescriptorProto p,
-            List<ServiceAndMethod> generate) {
+            List<ServiceAndMethod> generate,
+            Boolean isProxy) {
         DescriptorProtos.ServiceDescriptorProto serviceDescriptor = generate.get(0).getServiceDescriptor();
         String packageName = ProtobufDescriptorJavaUtil.javaPackage(p);
         String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(serviceDescriptor);
-        String grpcImplClass = ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, serviceDescriptor);
+        String grpcImplClass = (isProxy)?
+            ProtobufDescriptorJavaUtil.grpcStubClass(p, serviceDescriptor):
+            ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, serviceDescriptor);
         String fileName = packageName.replace('.', '/') + "/" + className + ".java";
 
         ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
