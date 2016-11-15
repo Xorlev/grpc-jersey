@@ -36,10 +36,10 @@ import java.util.stream.Collectors;
  * @author Michael Rose (xorlev)
  */
 public class CodeGenerator {
-    private static String mode;
+
     public PluginProtos.CodeGeneratorResponse generate(PluginProtos.CodeGeneratorRequest request)
             throws Descriptors.DescriptorValidationException {
-        mode = request.getParameter();
+        Boolean isProxy = ("proxy".equals(request.getParameter()));
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
@@ -82,7 +82,7 @@ public class CodeGenerator {
             }
 
             if(!toGenerate.isEmpty())
-                generateResource(response, lookup, p, toGenerate);
+                generateResource(response, lookup, p, toGenerate, isProxy);
         }
 
         return response.build();
@@ -92,11 +92,12 @@ public class CodeGenerator {
             PluginProtos.CodeGeneratorResponse.Builder response,
             Map<String, Descriptors.Descriptor> lookup,
             DescriptorProtos.FileDescriptorProto p,
-            List<ServiceAndMethod> generate) {
+            List<ServiceAndMethod> generate,
+            Boolean isProxy) {
         DescriptorProtos.ServiceDescriptorProto serviceDescriptor = generate.get(0).getServiceDescriptor();
         String packageName = ProtobufDescriptorJavaUtil.javaPackage(p);
         String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(serviceDescriptor);
-        String grpcImplClass = ("proxy".equals(mode))?
+        String grpcImplClass = (isProxy)?
             ProtobufDescriptorJavaUtil.grpcStubClass(p, serviceDescriptor):
             ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, serviceDescriptor);
         String fileName = packageName.replace('.', '/') + "/" + className + ".java";
