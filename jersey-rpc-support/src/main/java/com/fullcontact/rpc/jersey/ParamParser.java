@@ -13,8 +13,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.UnsafeByteOperations;
 import com.google.protobuf.util.JsonFormat;
+import io.grpc.Metadata;
+import io.grpc.stub.AbstractStub;
+import io.grpc.stub.MetadataUtils;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
@@ -40,6 +44,15 @@ public class ParamParser {
                 setFieldSafely(builder, fd, value);
             }
         }
+    }
+
+    public static  <T extends AbstractStub<T>> T parseHeaders(HttpHeaders headers, T stub){
+        Metadata newHeaders = new Metadata();
+        headers.getRequestHeaders().forEach((k, v) ->
+            newHeaders.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v.get(0))
+        );
+
+        return MetadataUtils.attachHeaders(stub, newHeaders);
     }
 
     public static void setFieldSafely(Message.Builder builder, String path, String value) {
