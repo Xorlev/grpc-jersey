@@ -52,7 +52,7 @@ public class {{className}} {
             RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
             {{/pathParams}}
         } catch(Exception e) {
-            asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(e));
+            asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).build());
             return;
         }
 
