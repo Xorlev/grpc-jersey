@@ -114,7 +114,8 @@ public class CodeGenerator {
             ProtobufDescriptorJavaUtil.javaPackage(p),
             className,
             grpcImplClass,
-            methods.build()
+            methods.build(),
+            isProxy
         );
 
         MustacheFactory mf = new DefaultMustacheFactory();
@@ -237,6 +238,7 @@ public class CodeGenerator {
         String className;
         String grpcStub; // fully-qualified class name;
         List<ResourceMethodToGenerate> methods;
+        Boolean parseHeaders;
     }
 
     @Value

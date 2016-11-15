@@ -27,7 +27,7 @@ import java.util.Set;
  *
  * @author Michael Rose (xorlev)
  */
-public class ParamParser {
+public class RequestParser {
     public static <V extends Message> void parseQueryParams(UriInfo uriInfo,
                                                             V.Builder builder,
                                                             DescriptorProtos.FieldDescriptorProto... pathParams) {
