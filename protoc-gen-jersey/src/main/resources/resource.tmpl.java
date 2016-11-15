@@ -29,6 +29,7 @@ public class {{className}} {
             @PathParam("{{name}}") String {{nameSanitized}},
             {{/pathParams}}
             @Context UriInfo uriInfo,
+            @Context HttpHeaders headers,
 {{#bodyFieldPath}}
             String body,
 {{/bodyFieldPath}}
@@ -36,6 +37,7 @@ public class {{className}} {
         {{requestType}}.Builder r = {{requestType}}.newBuilder();
 
         try {
+            stub = ParamParser.parseHeaders(headers, stub);
             {{#bodyFieldPath}}
             ParamParser.handleBody("{{bodyFieldPath}}",r,body);
             {{/bodyFieldPath}}
