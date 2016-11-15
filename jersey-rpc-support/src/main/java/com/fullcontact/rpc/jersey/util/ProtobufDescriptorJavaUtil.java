@@ -26,6 +26,15 @@ public class ProtobufDescriptorJavaUtil {
         return javaPackage(fd) + "." + serviceName + "Grpc." + serviceName + "ImplBase";
     }
 
+
+    public static String grpcStubClass(DescriptorProtos.FileDescriptorProto fd,
+                                       DescriptorProtos.ServiceDescriptorProto sdp) {
+        String serviceName = sdp.getName();
+
+        return javaPackage(fd) + "." + serviceName + "Grpc." + serviceName + "Stub";
+    }
+
+
     public static String jerseyResourceClassName(DescriptorProtos.ServiceDescriptorProto sdp) {
         String serviceName = sdp.getName();
 

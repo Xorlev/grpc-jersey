@@ -17,6 +17,8 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
 import lombok.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -35,10 +37,11 @@ import java.util.stream.Collectors;
  * @author Michael Rose (xorlev)
  */
 public class CodeGenerator {
+    private static String mode;
     public PluginProtos.CodeGeneratorResponse generate(PluginProtos.CodeGeneratorRequest request)
             throws Descriptors.DescriptorValidationException {
+        mode = request.getParameter();
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
-
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
         List<Descriptors.FileDescriptor> fds = Lists.newArrayList(
@@ -94,7 +97,9 @@ public class CodeGenerator {
         DescriptorProtos.ServiceDescriptorProto serviceDescriptor = generate.get(0).getServiceDescriptor();
         String packageName = ProtobufDescriptorJavaUtil.javaPackage(p);
         String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(serviceDescriptor);
-        String grpcImplClass = ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, serviceDescriptor);
+        String grpcImplClass = ("proxy".equals(mode))?
+            ProtobufDescriptorJavaUtil.grpcStubClass(p, serviceDescriptor):
+            ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, serviceDescriptor);
         String fileName = packageName.replace('.', '/') + "/" + className + ".java";
 
         ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
