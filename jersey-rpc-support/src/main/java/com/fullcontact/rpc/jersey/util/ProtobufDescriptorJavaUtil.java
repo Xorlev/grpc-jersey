@@ -85,8 +85,9 @@ public class ProtobufDescriptorJavaUtil {
             String segment = pathIterator.next();
             current = descriptor.findFieldByName(segment);
 
+            // not found, return empty
             if(current == null)
-                break;
+                return ImmutableList.of();
 
             if(current.getType() != Descriptors.FieldDescriptor.Type.MESSAGE && pathIterator.hasNext())
                 throw new IllegalArgumentException("Found non-complex datatype at " + segment

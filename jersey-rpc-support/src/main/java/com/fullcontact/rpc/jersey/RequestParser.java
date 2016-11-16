@@ -2,8 +2,6 @@ package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
 
-import static com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil.fieldPath;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -17,9 +15,9 @@ import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.MetadataUtils;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -31,6 +29,11 @@ public class RequestParser {
     public static <V extends Message> void parseQueryParams(UriInfo uriInfo,
                                                             V.Builder builder,
                                                             DescriptorProtos.FieldDescriptorProto... pathParams) {
+        parseQueryParams(uriInfo, builder, ImmutableList.copyOf(pathParams));
+    }
+    public static <V extends Message> void parseQueryParams(UriInfo uriInfo,
+                                                            V.Builder builder,
+                                                            List<DescriptorProtos.FieldDescriptorProto> pathParams) {
         Set<DescriptorProtos.FieldDescriptorProto> pathDescriptors = Sets.newHashSet(pathParams);
 
         for(Descriptors.FieldDescriptor fd : builder.getDescriptorForType().getFields()) {
@@ -67,31 +70,36 @@ public class RequestParser {
                 fieldBuilder = fieldBuilder.getFieldBuilder(fieldDescriptor);
         }
 
+        if(fieldDescriptors.isEmpty()) {
+            throw new IllegalArgumentException("Path " + path + " doesn't exist from root: "
+                                               + builder.getDescriptorForType().getName());
+        }
+
         setFieldSafely(fieldBuilder, fieldDescriptors.get(fieldDescriptors.size()-1), value);
     }
 
     public static void setFieldSafely(Message.Builder builder, Descriptors.FieldDescriptor fd, String value) {
         // TODO: strict validation
-        switch(fd.getJavaType()) {
-            case INT:
-                builder.setField(fd, Integer.parseInt(value));
-                break;
-            case LONG:
-                builder.setField(fd, Long.parseLong(value));
+        switch(fd.getType()) {
+            case DOUBLE:
+                builder.setField(fd, Double.parseDouble(value));
                 break;
             case FLOAT:
                 builder.setField(fd, Float.parseFloat(value));
                 break;
-            case DOUBLE:
-                builder.setField(fd, Double.parseDouble(value));
-                break;
-            case BOOLEAN:
+            case BOOL:
                 builder.setField(fd, Boolean.parseBoolean(value));
                 break;
             case STRING:
                 builder.setField(fd, value);
                 break;
-            case BYTE_STRING:
+            case GROUP:
+                // unsupported
+                break;
+            case MESSAGE:
+                // unsupported
+                break;
+            case BYTES:
                 builder.setField(fd, UnsafeByteOperations.unsafeWrap(value.getBytes()));
                 break;
             case ENUM:
@@ -99,9 +107,24 @@ public class RequestParser {
                     fd.getEnumType().findValueByName(value.toUpperCase());
                 builder.setField(fd, enumValueDescriptor); // TODO eh?
                 break;
-            case MESSAGE:
-                // unsupported
+            case INT32:
+                builder.setField(fd, Integer.parseInt(value));
                 break;
+            case UINT32:
+            case FIXED32:
+            case SFIXED32:
+            case SINT32:
+                builder.setField(fd, Integer.parseUnsignedInt(value));
+                break;
+            case INT64:
+                builder.setField(fd, Long.parseLong(value));
+                break;
+            case UINT64:
+            case FIXED64:
+            case SFIXED64:
+            case SINT64:
+                builder.setField(fd, Long.parseUnsignedLong(value));
+                // all are unsigned 64-bit ints
         }
     }
 
@@ -112,19 +135,22 @@ public class RequestParser {
         // * maps all body fields to the top-level proto
         // IDENT maps all body fields to nested proto
         // TODO: handle multiple levels of nesting
-        Message.Builder toMerge = null;
+        Message.Builder toMerge;
         if("*".equals(fieldPath)) {
             toMerge = builder;
         } else {
-            if(!fieldPath.contains(".")) {
-                Descriptors.FieldDescriptor descriptor = builder.getDescriptorForType().findFieldByName(fieldPath);
-                if(descriptor == null) {
-                    // todo
-                    return;
-                }
+            ImmutableList<Descriptors.FieldDescriptor> fieldDescriptors =
+                ProtobufDescriptorJavaUtil.fieldPath(builder.getDescriptorForType(), fieldPath);
 
-                if(descriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
-                    toMerge = builder.getFieldBuilder(descriptor);
+            if(fieldDescriptors.isEmpty()) {
+                // todo bad request
+                return;
+            }
+
+            toMerge = builder;
+            for(Descriptors.FieldDescriptor fd : fieldDescriptors) {
+                if(fd.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
+                    toMerge = toMerge.getFieldBuilder(fd);
                 }
             }
         }

@@ -185,12 +185,26 @@ public class CodeGenerator {
                 ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor = ProtobufDescriptorJavaUtil
                     .fieldPath(inputDescriptor, bodyFieldPath);
                 if(fieldDescriptor.isEmpty()) {
-                    List<String> availableFields = inputDescriptor.getFields()
-                        .stream()
-                        .map(Descriptors.FieldDescriptor::getName)
-                        .collect(Collectors.toList());
-                    throw new IllegalArgumentException("'body' attribute refers to non-existent field " +
-                                                       "'" + bodyFieldPath + "'. Available fields: " + availableFields);
+                    List<String> pathSegments = Splitter.on('.').omitEmptyStrings().trimResults().splitToList(path);
+
+                    while(!pathSegments.isEmpty()) {
+                        pathSegments.remove(pathSegments.size() - 1);
+
+                        fieldDescriptor = ProtobufDescriptorJavaUtil
+                            .fieldPath(inputDescriptor, bodyFieldPath);
+
+                        if(!fieldDescriptor.isEmpty()) {
+                            // TODO: remove bodyFieldPath segments until we have a fieldDescriptor
+                            List<String> availableFields = Iterables.getLast(fieldDescriptor).getMessageType()
+                                                                    .getFields()
+                                                                    .stream()
+                                                                    .map(Descriptors.FieldDescriptor::getName)
+                                                                    .collect(Collectors.toList());
+                            throw new IllegalArgumentException("'body' attribute refers to non-existent field " +
+                                                               "'" + bodyFieldPath + "'. Available fields: " +
+                                                               availableFields);
+                        }
+                    }
                 }
             }
 

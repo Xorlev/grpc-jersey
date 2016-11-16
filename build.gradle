@@ -64,7 +64,9 @@ subprojects {
         provided "org.projectlombok:lombok:${lombokVersion}"
         compile 'org.slf4j:slf4j-api:1.7.10'
 
-        testCompile "junit:junit:4.11"
+        testCompile "junit:junit:4.12"
+        testCompile "org.assertj:assertj-core:3.1.0"
+        testCompile "org.assertj:assertj-guava:3.1.0"
         testCompile "org.easymock:easymock:3.4"
         testCompile 'org.powermock:powermock-api-easymock:1.6.2'
         testCompile('ch.qos.logback:logback-classic:1.0.13')
@@ -87,8 +89,10 @@ project(":jersey-rpc-support") {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
-    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc");
+    ['java', 'grpc', 'jersey'].each { plugin ->
+        sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/${plugin}");
+        sourceSets.test.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/test/${plugin}");
+    }
 
     dependencies {
         compile "com.google.protobuf:protobuf-java:${protobufVersion}"
@@ -102,6 +106,16 @@ project(":jersey-rpc-support") {
         protoc {
             artifact = "com.google.protobuf:protoc:${protobufVersion}"
         }
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
+        }
     }
 }
 
@@ -113,9 +127,10 @@ project(":protoc-gen-jersey") {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
-    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc");
-    sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/jersey");
+    ['java', 'grpc', 'jersey'].each { plugin ->
+        sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/${plugin}");
+        sourceSets.test.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/test/${plugin}");
+    }
 
     dependencies {
         compile project(':jersey-rpc-support')
