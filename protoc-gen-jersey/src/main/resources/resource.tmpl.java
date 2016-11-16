@@ -5,6 +5,7 @@ import com.fullcontact.rpc.jersey.RequestParser;
 import com.fullcontact.rpc.jersey.GrpcErrorUtil;
 
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.io.IOException;
 import javax.ws.rs.*;
@@ -51,11 +52,16 @@ public class {{className}} {
             {{#pathParams}}
             RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
             {{/pathParams}}
-        } catch(Exception e) {
-            asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(e));
-            return;
-        }
+            {{#bodyFieldPath}}
+              } catch(InvalidProtocolBufferException e) {
+                asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).build());
+                return;
 
+            {{/bodyFieldPath}}
+            } catch(Exception e) {
+              asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(e));
+              return;
+            }
         stub.{{methodNameLower}}(r.build(), new JerseyStreamObserver<>(asyncResponse));
     }
     {{/methods}}
