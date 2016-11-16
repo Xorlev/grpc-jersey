@@ -13,14 +13,13 @@ plugins {
 }
 
 ext {
-    grpcVersion = "1.0.0"
+    grpcVersion = "1.0.1"
     lombokVersion = "1.16.10"
     protobufVersion = "3.1.0"
 }
 
 allprojects {
     repositories {
-        mavenLocal()
         mavenCentral()
     }
 }

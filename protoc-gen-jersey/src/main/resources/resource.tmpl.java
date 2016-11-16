@@ -13,7 +13,11 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 
+@javax.annotation.Generated(
+    value = "by grpc-java proto compiler (version {{grpcJavaVersion}})",
+    comments = "Source: {{sourceProtoFile}}")
 @Produces({"application/json; charset=UTF-8"})
+@Consumes({"application/json; charset=UTF-8"})
 @Path("/")
 public class {{className}} {
     private {{grpcStub}} stub;
@@ -53,15 +57,15 @@ public class {{className}} {
             RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
             {{/pathParams}}
             {{#bodyFieldPath}}
-              } catch(InvalidProtocolBufferException e) {
-                asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).build());
-                return;
+        } catch(InvalidProtocolBufferException e) {
+            asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).build());
+            return;
 
             {{/bodyFieldPath}}
-            } catch(Exception e) {
-              asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(e));
-              return;
-            }
+        } catch(Exception e) {
+            asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(e));
+            return;
+        }
         stub.{{methodNameLower}}(r.build(), new JerseyStreamObserver<>(asyncResponse));
     }
     {{/methods}}

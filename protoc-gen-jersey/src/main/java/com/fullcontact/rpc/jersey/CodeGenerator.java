@@ -10,14 +10,15 @@ import com.google.api.HttpRule;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
 import lombok.Value;
-
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -39,7 +40,8 @@ public class CodeGenerator {
 
     public PluginProtos.CodeGeneratorResponse generate(PluginProtos.CodeGeneratorRequest request)
             throws Descriptors.DescriptorValidationException {
-        Boolean isProxy = ("proxy".equals(request.getParameter()));
+        boolean isProxy = "proxy".equals(request.getParameter());
+
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
@@ -69,8 +71,9 @@ public class CodeGenerator {
 
             // Find RPC methods with HTTP extensions
             List<ServiceAndMethod> toGenerate = new ArrayList<>();
-            for(DescriptorProtos.ServiceDescriptorProto s : p.getServiceList()) {
-                for(DescriptorProtos.MethodDescriptorProto m : s.getMethodList()) {
+            for(Descriptors.ServiceDescriptor s : fd.getServices()) {
+                DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = s.toProto();
+                for(DescriptorProtos.MethodDescriptorProto m : serviceDescriptorProto.getMethodList()) {
                     if(m.getOptions().hasExtension(AnnotationsProto.http)) {
                         // TODO(xorlev): support server streaming
                         if(m.getServerStreaming() || m.getClientStreaming())
@@ -93,13 +96,14 @@ public class CodeGenerator {
             Map<String, Descriptors.Descriptor> lookup,
             DescriptorProtos.FileDescriptorProto p,
             List<ServiceAndMethod> generate,
-            Boolean isProxy) {
-        DescriptorProtos.ServiceDescriptorProto serviceDescriptor = generate.get(0).getServiceDescriptor();
+            boolean isProxy) {
+        Descriptors.ServiceDescriptor serviceDescriptor = generate.get(0).getServiceDescriptor();
+        DescriptorProtos.ServiceDescriptorProto sdp = generate.get(0).getServiceDescriptor().toProto();
         String packageName = ProtobufDescriptorJavaUtil.javaPackage(p);
-        String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(serviceDescriptor);
+        String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(sdp);
         String grpcImplClass = (isProxy)?
-            ProtobufDescriptorJavaUtil.grpcStubClass(p, serviceDescriptor):
-            ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, serviceDescriptor);
+            ProtobufDescriptorJavaUtil.grpcStubClass(p, sdp):
+            ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, sdp);
         String fileName = packageName.replace('.', '/') + "/" + className + ".java";
 
         ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
@@ -111,6 +115,7 @@ public class CodeGenerator {
         }
 
         ResourceToGenerate r = new ResourceToGenerate(
+            serviceDescriptor,
             ProtobufDescriptorJavaUtil.javaPackage(p),
             className,
             grpcImplClass,
@@ -234,11 +239,16 @@ public class CodeGenerator {
 
     @Value
     static class ResourceToGenerate {
+        Descriptors.ServiceDescriptor serviceDescriptor;
         String javaPackage;
         String className;
         String grpcStub; // fully-qualified class name;
         List<ResourceMethodToGenerate> methods;
-        Boolean parseHeaders;
+        boolean parseHeaders;
+
+        String sourceProtoFile() {
+            return serviceDescriptor.getFile().getName();
+        }
     }
 
     @Value
@@ -278,7 +288,7 @@ public class CodeGenerator {
 
     @Value
     static class ServiceAndMethod {
-        DescriptorProtos.ServiceDescriptorProto serviceDescriptor;
+        Descriptors.ServiceDescriptor serviceDescriptor;
         DescriptorProtos.MethodDescriptorProto methodDescriptor;
     }
 }
