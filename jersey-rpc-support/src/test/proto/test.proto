@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.fullcontact.rpc";
+import "google/api/annotations.proto";
+
+service TestService {
+    rpc TestMethod (TestRequest) returns (TestResponse) {
+        option (google.api.http).get = "/users/{id}";
+    }
+    rpc TestMethod2 (TestRequest) returns (TestResponse) {
+        option (google.api.http) = {
+            post: "/users/",
+            body: "*";
+        };
+    }
+}
+enum TestEnum {
+    FIRST = 0;
+    SECOND = 1;
+}
+message NestedNestedType {
+    repeated string f1 = 1;
+}
+message NestedType {
+    string f1 = 1;
+    NestedNestedType nnt = 2;
+}
+message TestRequest {
+    string s = 1;
+    uint32 uint3 = 2;
+    uint64 uint6 = 3;
+    int32 int3 = 4;
+    int64 int6 = 5;
+    bytes bytearray = 6;
+    bool boolean = 7;
+    float f = 8;
+    double d = 9;
+    TestEnum enu = 10;
+    NestedType nt = 11;
+}
+message TestResponse {
+    string f1 = 1;
+    uint64 f2 = 2;
+    TestEnum f3 = 3;
+}
