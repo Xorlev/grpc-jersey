@@ -31,9 +31,10 @@ This project is in use and under active development.
 Short-term roadmap:
 
 - [ ] Documentation
-- [ ] Support recursive expansion for path parameters
-- [ ] Support recursive expansion for query parameters
-- [x] Support recursive expansion for body parameters
+- [ ] Support recursive path expansion for path parameters
+- [ ] Support recursive path expansion for query parameters
+- [x] Support recursive path expansion for body parameters
+- [ ] `additional_bindings` support
 - [ ] Performance tests
 - [ ] Generic/pluggable error handling
 - [ ] [possible] supporting streaming RPCs
