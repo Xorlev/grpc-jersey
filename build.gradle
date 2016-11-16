@@ -84,7 +84,6 @@ subprojects {
 project(":jersey-rpc-support") {
     apply plugin: 'com.google.protobuf'
     apply plugin: 'artifactory'
-    apply plugin: 'com.github.johnrengelman.shadow'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
