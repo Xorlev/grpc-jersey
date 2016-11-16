@@ -50,12 +50,16 @@ public class RequestParser {
     }
 
     public static  <T extends AbstractStub<T>> T parseHeaders(HttpHeaders headers, T stub){
+        return MetadataUtils.attachHeaders(stub, parseHeaders(headers));
+    }
+
+    public static Metadata parseHeaders(HttpHeaders headers){
         Metadata newHeaders = new Metadata();
         headers.getRequestHeaders().forEach((k, v) ->
             newHeaders.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v.get(0))
         );
 
-        return MetadataUtils.attachHeaders(stub, newHeaders);
+        return newHeaders;
     }
 
     public static void setFieldSafely(Message.Builder builder, String path, String value) {

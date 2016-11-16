@@ -4,16 +4,13 @@ import com.fullcontact.rpc.NestedNestedType;
 import com.fullcontact.rpc.NestedType;
 import com.fullcontact.rpc.TestEnum;
 import com.fullcontact.rpc.TestRequest;
-import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.util.JsonFormat;
+import io.grpc.Metadata;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,7 +57,16 @@ public class RequestParserTest {
 
     @Test
     public void parseHeaders() throws Exception {
+        HttpHeadersMap headersMap = new HttpHeadersMap()
+            .put("X-Grpc-RateLimit", "128")
+            .put("Content-Type", "application/json");
 
+        Metadata headers = RequestParser.parseHeaders(headersMap);
+
+        assertThat(headers.get(Metadata.Key.of("X-Grpc-RateLimit", Metadata.ASCII_STRING_MARSHALLER)))
+            .isEqualTo("128");
+        assertThat(headers.get(Metadata.Key.of("Content-Type", Metadata.ASCII_STRING_MARSHALLER)))
+            .isEqualTo("application/json");
     }
 
     @Test
