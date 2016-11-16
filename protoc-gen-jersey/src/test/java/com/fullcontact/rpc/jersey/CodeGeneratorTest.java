@@ -2,10 +2,10 @@ package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.TestRequest;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterables;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test for {@link CodeGenerator}
@@ -17,7 +17,10 @@ public class CodeGeneratorTest {
     public void parsePathParams() throws Exception {
         assertThat(CodeGenerator.parsePathParams(TestRequest.getDescriptor(), "/users/{s}/{uint3}/{nt.f1}"))
             .extracting("name")
-            .isEqualTo(Lists.newArrayList("s", "uint3", "nt.f1"));
+            .containsExactly("s", "uint3", "nt.f1");
+        assertThat(CodeGenerator.parsePathParams(TestRequest.getDescriptor(), "/users/{s}/{uint3}/{nt.f1}"))
+            .extracting(x -> Iterables.getLast(x.getFieldDescriptor()).getName())
+            .containsExactly("s", "uint3", "f1");
     }
 
 }
