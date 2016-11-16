@@ -233,7 +233,7 @@ public class CodeGenerator {
         //     Verb     = ":" LITERAL ;
         // If we have wildcards, we can emit regex instead
 
-        Pattern pattern = Pattern.compile(".*\\{([a-z_\\.]+)\\}.*");
+        Pattern pattern = Pattern.compile("\\{([a-z0-9_\\.]+)\\}");
         Matcher m = pattern.matcher(path);
         ImmutableList.Builder<PathParam> pathParams = ImmutableList.builder();
         while(m.find()) {
