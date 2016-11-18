@@ -6,13 +6,20 @@ used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) proje
 
 ## Example Usage
 
-Until we publish the plugin to Maven Central or Bintray, first build and install the plugin locally:
+Artifacts are available on the Sonatype snapshots repository, and eventually on Maven Central once a release.
 
 ```
-./gradlew :protoc-gen-jersey:install
+repositories {
+    maven {
+        name "Sonatype Snapshots"
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+}
 ```
 
-Then configure your project. Example provided here uses the [gradle-protobuf-plugin](https://github.com/google/protobuf-gradle-plugin)
+As of the writing of this document, the current released version is *0.1.0-SNAPSHOT*.
+
+Example provided here uses the [gradle-protobuf-plugin](https://github.com/google/protobuf-gradle-plugin)
 but an example using Maven can be found [in examples](https://github.com/fullcontact/grpc-jersey/tree/master/pom.xml).
 
 ```groovy
