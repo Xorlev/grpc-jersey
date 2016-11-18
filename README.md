@@ -20,7 +20,7 @@ repositories {
 As of the writing of this document, the current released version is *0.1.0-SNAPSHOT*.
 
 Example provided here uses the [gradle-protobuf-plugin](https://github.com/google/protobuf-gradle-plugin)
-but an example using Maven can be found [in examples](https://github.com/fullcontact/grpc-jersey/tree/master/pom.xml).
+but an example using Maven can be found [in examples](https://github.com/fullcontact/grpc-jersey/tree/master/examples/maven/pom.xml).
 
 ```groovy
 protobuf {
