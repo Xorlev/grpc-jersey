@@ -25,7 +25,7 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
         }
         jersey {
-            artifact = "com.fullcontact.rpc:protoc-gen-jersey:${grpcJerseyVersion}"
+            artifact = "com.fullcontact.grpc-jersey:protoc-gen-jersey:${grpcJerseyVersion}"
         }
     }
     generateProtoTasks {
@@ -40,7 +40,7 @@ protobuf {
 You'll also have to be sure to include the `jersey-rpc-support` package:
 
 ```groovy
-compile "com.fullcontact.rpc:jersey-rpc-support:${grpcJerseyVersion}"
+compile "com.fullcontact.grpc-jersey:jersey-rpc-support:${grpcJerseyVersion}"
 ```
 
 Running `./gradlew build` and a protobuf definition that looks roughly like the below

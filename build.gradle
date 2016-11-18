@@ -24,7 +24,9 @@ allprojects {
     }
 }
 
+apply from: file('gradle/convention.gradle')
 apply from: file('gradle/release.gradle')
+apply from: file('gradle/maven.gradle')
 
 subprojects {
     apply plugin: 'java'
@@ -71,13 +73,6 @@ subprojects {
         testCompile 'org.powermock:powermock-api-easymock:1.6.2'
         testCompile('ch.qos.logback:logback-classic:1.0.13')
         testCompile('ch.qos.logback:logback-core:1.0.13')
-    }
-
-    test {
-        maxParallelForks = 5
-        forkEvery = 5
-        exclude '**/functional/**'
-        exclude '**/deploygate/**'
     }
 }
 
