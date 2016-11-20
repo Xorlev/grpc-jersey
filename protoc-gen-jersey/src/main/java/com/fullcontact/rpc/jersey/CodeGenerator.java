@@ -7,6 +7,7 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 import com.google.api.AnnotationsProto;
 import com.google.api.HttpRule;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
@@ -18,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
+import lombok.Builder;
 import lombok.Value;
 
 import java.io.StringWriter;
@@ -45,47 +47,46 @@ public class CodeGenerator {
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
-        List<Descriptors.FileDescriptor> fds = Lists.newArrayList(
+        List<Descriptors.FileDescriptor> fileDescriptors = Lists.newArrayList(
             DescriptorProtos.MethodOptions.getDescriptor().getFile(),
             AnnotationsProto.getDescriptor(),
             HttpRule.getDescriptor().getFile()
         );
-        for(DescriptorProtos.FileDescriptorProto p : request.getProtoFileList()) {
+        for(DescriptorProtos.FileDescriptorProto fdProto : request.getProtoFileList()) {
             // Descriptors are provided in dependency-topological order
             // each time we collect a new FileDescriptor, we add it to a
             // mutable list of descriptors and append the entire dependency
             // chain to each new FileDescriptor to allow crossLink() to function.
-            // TODO(xorlev) might have to be more selective about deps in future
+            // TODO(xorlev): might have to be more selective about deps in future
             Descriptors.FileDescriptor fd = Descriptors.FileDescriptor.buildFrom(
-                p, fds.toArray(new Descriptors.FileDescriptor[] {})
+                fdProto, fileDescriptors.toArray(new Descriptors.FileDescriptor[] {})
             );
-            fds.add(fd);
+            fileDescriptors.add(fd);
 
             // if type starts with a ".", it's in this package
             // otherwise it's fully qualified
-            String protoPackage = p.getPackage();
-            for(DescriptorProtos.DescriptorProto d : p.getMessageTypeList()) {
-                lookup.put("." + protoPackage+"."+d.getName(), fd.findMessageTypeByName(d.getName()));
-
+            String protoPackage = fdProto.getPackage();
+            for(DescriptorProtos.DescriptorProto d : fdProto.getMessageTypeList()) {
+                lookup.put("." + protoPackage + "." + d.getName(), fd.findMessageTypeByName(d.getName()));
             }
 
             // Find RPC methods with HTTP extensions
-            List<ServiceAndMethod> toGenerate = new ArrayList<>();
-            for(Descriptors.ServiceDescriptor s : fd.getServices()) {
-                DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = s.toProto();
-                for(DescriptorProtos.MethodDescriptorProto m : serviceDescriptorProto.getMethodList()) {
-                    if(m.getOptions().hasExtension(AnnotationsProto.http)) {
+            List<ServiceAndMethod> methodsToGenerate = new ArrayList<>();
+            for(Descriptors.ServiceDescriptor serviceDescriptor : fd.getServices()) {
+                DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = serviceDescriptor.toProto();
+                for(DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
+                    if(methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
                         // TODO(xorlev): support server streaming
-                        if(m.getServerStreaming() || m.getClientStreaming())
+                        if(methodProto.getServerStreaming() || methodProto.getClientStreaming())
                             throw new IllegalArgumentException("http annotations cannot be used with streaming methods");
 
-                        toGenerate.add(new ServiceAndMethod(s, m));
+                        methodsToGenerate.add(new ServiceAndMethod(serviceDescriptor, methodProto));
                     }
                 }
             }
 
-            if(!toGenerate.isEmpty())
-                generateResource(response, lookup, p, toGenerate, isProxy);
+            if(!methodsToGenerate.isEmpty())
+                generateResource(response, lookup, fdProto, methodsToGenerate, isProxy);
         }
 
         return response.build();
@@ -93,35 +94,11 @@ public class CodeGenerator {
 
     private void generateResource(
             PluginProtos.CodeGeneratorResponse.Builder response,
-            Map<String, Descriptors.Descriptor> lookup,
-            DescriptorProtos.FileDescriptorProto p,
+            Map<String, Descriptors.Descriptor> descriptorTable,
+            DescriptorProtos.FileDescriptorProto fileDescriptorProto,
             List<ServiceAndMethod> generate,
             boolean isProxy) {
-        Descriptors.ServiceDescriptor serviceDescriptor = generate.get(0).getServiceDescriptor();
-        DescriptorProtos.ServiceDescriptorProto sdp = generate.get(0).getServiceDescriptor().toProto();
-        String packageName = ProtobufDescriptorJavaUtil.javaPackage(p);
-        String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(sdp);
-        String grpcImplClass = (isProxy)?
-            ProtobufDescriptorJavaUtil.grpcStubClass(p, sdp):
-            ProtobufDescriptorJavaUtil.grpcImplBaseClass(p, sdp);
-        String fileName = packageName.replace('.', '/') + "/" + className + ".java";
-
-        ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
-        for(ServiceAndMethod sam : generate) {
-            Descriptors.Descriptor inputDescriptor = lookup.get(sam.getMethodDescriptor().getInputType());
-            Descriptors.Descriptor outputDescriptor = lookup.get(sam.getMethodDescriptor().getOutputType());
-            List<ResourceMethodToGenerate> methodToGenerate = parseRule(sam, inputDescriptor, outputDescriptor);
-            methods.addAll(methodToGenerate);
-        }
-
-        ResourceToGenerate r = new ResourceToGenerate(
-            serviceDescriptor,
-            ProtobufDescriptorJavaUtil.javaPackage(p),
-            className,
-            grpcImplClass,
-            methods.build(),
-            isProxy
-        );
+        ResourceToGenerate r = buildResourceSpec(descriptorTable, fileDescriptorProto, generate, isProxy);
 
         MustacheFactory mf = new DefaultMustacheFactory();
         Mustache mustache = mf.compile("resource.tmpl.java");
@@ -130,15 +107,26 @@ public class CodeGenerator {
 
         response.addFile(PluginProtos.CodeGeneratorResponse.File.newBuilder()
                          .setContent(writer.toString())
-                         .setName(fileName)
+                         .setName(r.getFileName())
                          .build());
 
         System.err.println(writer.toString());
     }
 
-    private ImmutableList<ResourceMethodToGenerate> parseRule(ServiceAndMethod sam,
-                                                              Descriptors.Descriptor inputDescriptor,
-                                                              Descriptors.Descriptor outputDescriptor) {
+    /**
+     * Generates a {@link ResourceMethodToGenerate} spec from the {@link ServiceAndMethod} plus the input/output RPC
+     * message descriptors
+     *
+     * @param sam named tuple of (service descriptor proto, method descriptor proto)
+     * @param inputDescriptor RPC input descriptor
+     * @param outputDescriptor RPC output descriptor
+     * @return list of handlers to handle the given RPC method. Usually a single result, but can be multiple if
+     * additional_bindings is defined.
+     */
+    @VisibleForTesting
+    ImmutableList<ResourceMethodToGenerate> parseRule(ServiceAndMethod sam,
+                                                      Descriptors.Descriptor inputDescriptor,
+                                                      Descriptors.Descriptor outputDescriptor) {
         HttpRule baseRule = sam.getMethodDescriptor().getOptions().getExtension(AnnotationsProto.http);
 
         ImmutableList<HttpRule> rules = ImmutableList.<HttpRule>builder()
@@ -182,16 +170,16 @@ public class CodeGenerator {
             String bodyFieldPath = Strings.emptyToNull(rule.getBody());
 
             if(bodyFieldPath != null && !bodyFieldPath.equals("*")) {
-                ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor = ProtobufDescriptorJavaUtil
-                    .fieldPath(inputDescriptor, bodyFieldPath);
+                ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor =
+                    ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, bodyFieldPath);
+
                 if(fieldDescriptor.isEmpty()) {
                     List<String> pathSegments = Splitter.on('.').omitEmptyStrings().trimResults().splitToList(path);
 
                     while(!pathSegments.isEmpty()) {
                         pathSegments.remove(pathSegments.size() - 1);
 
-                        fieldDescriptor = ProtobufDescriptorJavaUtil
-                            .fieldPath(inputDescriptor, bodyFieldPath);
+                        fieldDescriptor = ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, bodyFieldPath);
 
                         if(!fieldDescriptor.isEmpty()) {
                             // TODO: remove bodyFieldPath segments until we have a fieldDescriptor
@@ -208,7 +196,6 @@ public class CodeGenerator {
                 }
             }
 
-
             methodsToGenerate.add(new ResourceMethodToGenerate(
                 sam.getMethodDescriptor().getName(),
                 method,
@@ -223,8 +210,52 @@ public class CodeGenerator {
         return methodsToGenerate.build();
     }
 
+    /**
+     * Creates a generator spec for a given service resource and all of the methods.
+     *
+     * @param descriptorTable mapping of proto.path.MessageType to the descriptor instance
+     * @param fileDescriptorProto file descriptor of the origin service
+     * @param methodSpecs list of methods in the given service
+     * @param isProxy should this resource use client stubs or implbase?
+     * @return
+     */
+    @VisibleForTesting
+    ResourceToGenerate buildResourceSpec(
+            Map<String, Descriptors.Descriptor> descriptorTable,
+            DescriptorProtos.FileDescriptorProto fileDescriptorProto,
+            List<ServiceAndMethod> methodSpecs,
+            boolean isProxy) {
+        Descriptors.ServiceDescriptor serviceDescriptor = methodSpecs.get(0).getServiceDescriptor();
+        DescriptorProtos.ServiceDescriptorProto sdp = methodSpecs.get(0).getServiceDescriptor().toProto();
+        String packageName = ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto);
+        String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(sdp);
+        String grpcImplClass = (isProxy)?
+            ProtobufDescriptorJavaUtil.grpcStubClass(fileDescriptorProto, sdp):
+            ProtobufDescriptorJavaUtil.grpcImplBaseClass(fileDescriptorProto, sdp);
+        String fileName = packageName.replace('.', '/') + "/" + className + ".java";
+
+        ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
+        for(ServiceAndMethod sam : methodSpecs) {
+            Descriptors.Descriptor inputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getInputType());
+            Descriptors.Descriptor outputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getOutputType());
+            List<ResourceMethodToGenerate> methodToGenerate = parseRule(sam, inputDescriptor, outputDescriptor);
+            methods.addAll(methodToGenerate);
+        }
+
+        return ResourceToGenerate
+            .builder()
+            .serviceDescriptor(serviceDescriptor)
+            .javaPackage(ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto))
+            .className(className)
+            .grpcStub(grpcImplClass)
+            .methods(methods.build())
+            .parseHeaders(isProxy)
+            .fileName(fileName)
+            .build();
+    }
+
     public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor, String path) {
-        // TODO: handle unnamed wildcards & multi-level paths
+        // TODO(xorlev): handle unnamed wildcards & path expansion
         //     Template = "/" Segments [ Verb ] ;
         //     Segments = Segment { "/" Segment } ;
         //     Segment  = "*" | "**" | LITERAL | Variable ;
@@ -252,6 +283,7 @@ public class CodeGenerator {
     }
 
     @Value
+    @Builder
     static class ResourceToGenerate {
         Descriptors.ServiceDescriptor serviceDescriptor;
         String javaPackage;
@@ -259,6 +291,7 @@ public class CodeGenerator {
         String grpcStub; // fully-qualified class name;
         List<ResourceMethodToGenerate> methods;
         boolean parseHeaders;
+        String fileName;
 
         String sourceProtoFile() {
             return serviceDescriptor.getFile().getName();
@@ -300,6 +333,9 @@ public class CodeGenerator {
         }
     }
 
+    /**
+     * Named tuple of (service descriptor, method descriptor proto)
+     */
     @Value
     static class ServiceAndMethod {
         Descriptors.ServiceDescriptor serviceDescriptor;
