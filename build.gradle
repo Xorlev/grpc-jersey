@@ -26,7 +26,7 @@ allprojects {
 
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/release.gradle')
- // apply from: file('gradle/maven.gradle')
+apply from: file('gradle/maven.gradle')
 
 subprojects {
     apply plugin: 'java'
