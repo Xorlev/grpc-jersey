@@ -42,10 +42,13 @@ public class {{className}} {
 {{/bodyFieldPath}}
             @Suspended final AsyncResponse asyncResponse) throws IOException {
         {{requestType}}.Builder r = {{requestType}}.newBuilder();
-
+    {{#parseHeaders}}
+        // Shadowed to prevent building up headers
+        {{grpcStub}} stub;
+    {{/parseHeaders}}
         try {
             {{#parseHeaders}}
-            stub = RequestParser.parseHeaders(headers, stub);
+            stub = RequestParser.parseHeaders(headers, this.stub);
             {{/parseHeaders}}
             {{#bodyFieldPath}}
             RequestParser.handleBody("{{bodyFieldPath}}",r,body);
