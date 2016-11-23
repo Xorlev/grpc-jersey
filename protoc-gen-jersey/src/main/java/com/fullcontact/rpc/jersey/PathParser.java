@@ -15,7 +15,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Parser for google.api.http path language
+ * Parser for google.api.http path language,
+ * based on RFC 6570(https://tools.ietf.org/html/rfc6570) Section 3.2.3 Reserved Expansion.
  *
  * Template = "/" Segments [ Verb ] ;
  * Segments = Segment { "/" Segment } ;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
  * FieldPath = IDENT { "." IDENT } ;
  * Verb     = ":" LITERAL ;
  *
- * Parser supports all but the "Verb" clause which appears to be superfluous.
+ * Parser supports all but the "Verb" clause which appears to be superfluous, and disallows nested variable segments.
  *
  * Parsed template trees also emit Jersey @PATH compatible paths with invocation of
  * {@link ParsedPath#toPath()}
@@ -78,7 +79,12 @@ public class PathParser {
             // Parse nested segments if available
             while(parser.peek() == '/') {
                 parser.next();
-                segments.add(parseSegment(parser));
+                Segment segment = parseSegment(parser);
+
+                if(segment instanceof NamedVariable)
+                    throw new ParseException("Variables cannot be nested.");
+
+                segments.add(segment);
             }
         }
 

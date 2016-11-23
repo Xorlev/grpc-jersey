@@ -50,9 +50,6 @@ public class PathParserTest {
         if(testCase.generatedPath.isPresent()) {
             PathParser.ParsedPath parsed = PathParser.parse(testCase.path);
             UriTemplateParser parser = new UriTemplateParser(parsed.toPath());
-
-            System.out.println(parser.getPattern());
-            System.out.println(parser.getNameToPattern());
         }
 
     }
@@ -61,15 +58,7 @@ public class PathParserTest {
     public static Collection<TestCase> data() {
         List<TestCase> testCases = Lists.newArrayList(
             new TestCase("/resource/{user_id}/{path=hello/{person}}/*/test",
-                         new PathParser.ParsedPath(
-                             new PathParser.Literal("resource"),
-                             new PathParser.NamedVariable("user_id"),
-                             new PathParser.NamedVariable(
-                                 "path",
-                                 new PathParser.Literal("hello"),
-                                 new PathParser.NamedVariable("person")),
-                             PathParser.Wildcard.INSTANCE,
-                             new PathParser.Literal("test"))
+                         null
                          // no url generated: nested is invalid
             ),
             new TestCase("/resource/{user_id}/{path=**}/*/test",
