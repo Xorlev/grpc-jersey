@@ -4,7 +4,7 @@ subprojects {
   apply plugin: 'signing'
 
   signing {
-    required { gradle.taskGraph.hasTask(uploadMavenCentral) }
+    required { status == 'release' && gradle.taskGraph.hasTask(uploadMavenCentral) }
     sign configurations.archives
   }
 

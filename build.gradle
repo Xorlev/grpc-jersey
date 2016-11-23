@@ -78,7 +78,6 @@ subprojects {
 
 project(":jersey-rpc-support") {
     apply plugin: 'com.google.protobuf'
-    apply plugin: 'artifactory'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -114,14 +113,13 @@ project(":jersey-rpc-support") {
 }
 
 project(":protoc-gen-jersey") {
-    apply plugin: 'artifactory'
     apply plugin: 'com.google.protobuf'
     apply plugin: 'com.github.johnrengelman.shadow'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    ['java', 'grpc', 'jersey'].each { plugin ->
+    ['java', 'grpc'].each { plugin ->
         sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/${plugin}");
         sourceSets.test.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/test/${plugin}");
     }
@@ -200,6 +198,7 @@ project(":protoc-gen-jersey") {
     }
 
     prependShellStub.dependsOn(shadowJar)
+    buildArtifacts.dependsOn(test) // otherwise class files are empty(?)
     buildArtifacts.dependsOn(shadowJar)
     buildArtifacts.dependsOn(prependShellStub)
     shadowJar.finalizedBy(prependShellStub)
