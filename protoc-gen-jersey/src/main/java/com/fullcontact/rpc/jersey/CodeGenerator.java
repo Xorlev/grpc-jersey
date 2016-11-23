@@ -255,14 +255,6 @@ public class CodeGenerator {
     }
 
     public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor, PathParser.ParsedPath path) {
-        // TODO(xorlev): handle unnamed wildcards & path expansion
-        //     Template = "/" Segments [ Verb ] ;
-        //     Segments = Segment { "/" Segment } ;
-        //     Segment  = "*" | "**" | LITERAL | Variable ;
-        //     Variable = "{" FieldPath [ "=" Segments ] "}" ;
-        //     FieldPath = IDENT { "." IDENT } ;
-        //     Verb     = ":" LITERAL ;
-        // If we have wildcards, we can emit regex instead
         ImmutableList.Builder<PathParam> pathParams = ImmutableList.builder();
         path.visit(new PathParser.EmptySegmentVisitor() {
             @Override
@@ -273,6 +265,14 @@ public class CodeGenerator {
                 if(fieldDescriptor.isEmpty())
                     throw new IllegalArgumentException("Couldn't find path param: " + namedVariable.getName()
                                                        + " in input type: " + inputDescriptor.toProto());
+
+                Descriptors.FieldDescriptor descriptor = Iterables.getLast(fieldDescriptor);
+
+                if(descriptor.isMapField() || descriptor.isRepeated())
+                    throw new IllegalArgumentException(
+                        "Cannot map path param '" + namedVariable.getName() + "' as URL mapping is not supported " +
+                        "for map or repeated field types."
+                    );
 
                 pathParams.add(new PathParam(namedVariable.getName(), fieldDescriptor));
             }
