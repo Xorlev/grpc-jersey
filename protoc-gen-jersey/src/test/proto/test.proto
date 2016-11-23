@@ -10,10 +10,13 @@ service TestService {
     }
     rpc TestMethod2 (TestRequest) returns (TestResponse) {
         option (google.api.http) = {
-        post: "/users/",
-        body: "*";
-    };
-}
+            post: "/users/",
+            body: "*";
+        };
+    }
+    rpc TestMethod3 (TestRequest) returns (TestResponse) {
+        option (google.api.http).get = "/users/{s=hello/**}/{uint3}/{nt.f1}/*/**/test";
+    }
 }
 enum TestEnum {
     FIRST = 0;

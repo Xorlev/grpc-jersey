@@ -15,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CodeGeneratorTest {
     @Test
     public void parsePathParams() throws Exception {
-        assertThat(CodeGenerator.parsePathParams(TestRequest.getDescriptor(), "/users/{s}/{uint3}/{nt.f1}"))
+        assertThat(CodeGenerator.parsePathParams(TestRequest.getDescriptor(), PathParser.parse("/users/{s}/{uint3}/{nt.f1}")))
             .extracting("name")
             .containsExactly("s", "uint3", "nt.f1");
-        assertThat(CodeGenerator.parsePathParams(TestRequest.getDescriptor(), "/users/{s}/{uint3}/{nt.f1}"))
+        assertThat(CodeGenerator.parsePathParams(TestRequest.getDescriptor(), PathParser.parse("/users/{s}/{uint3}/{nt.f1}")))
             .extracting(x -> Iterables.getLast(x.getFieldDescriptor()).getName())
             .containsExactly("s", "uint3", "f1");
     }

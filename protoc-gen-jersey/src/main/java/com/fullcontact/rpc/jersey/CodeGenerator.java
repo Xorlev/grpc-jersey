@@ -163,10 +163,10 @@ public class CodeGenerator {
             if(path.trim().isEmpty())
                 throw new IllegalArgumentException("rule path must be set");
 
-            ImmutableList<PathParam> pathParams = parsePathParams(inputDescriptor, path);
-
             // TODO(xorlev): check for URL overlap
-            // TODO(xorlev): handle full paths
+            PathParser.ParsedPath parsedPath = PathParser.parse(path);
+            ImmutableList<PathParam> pathParams = parsePathParams(inputDescriptor, parsedPath);
+
             String bodyFieldPath = Strings.emptyToNull(rule.getBody());
 
             if(bodyFieldPath != null && !bodyFieldPath.equals("*")) {
@@ -199,7 +199,7 @@ public class CodeGenerator {
             methodsToGenerate.add(new ResourceMethodToGenerate(
                 sam.getMethodDescriptor().getName(),
                 method,
-                path,
+                parsedPath.toPath(),
                 pathParams,
                 bodyFieldPath,
                 ProtobufDescriptorJavaUtil.genClassName(inputDescriptor),
@@ -254,7 +254,7 @@ public class CodeGenerator {
             .build();
     }
 
-    public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor, String path) {
+    public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor, PathParser.ParsedPath path) {
         // TODO(xorlev): handle unnamed wildcards & path expansion
         //     Template = "/" Segments [ Verb ] ;
         //     Segments = Segment { "/" Segment } ;
@@ -263,21 +263,20 @@ public class CodeGenerator {
         //     FieldPath = IDENT { "." IDENT } ;
         //     Verb     = ":" LITERAL ;
         // If we have wildcards, we can emit regex instead
-
-        Pattern pattern = Pattern.compile("\\{([a-z0-9_\\.]+)\\}");
-        Matcher m = pattern.matcher(path);
         ImmutableList.Builder<PathParam> pathParams = ImmutableList.builder();
-        while(m.find()) {
-            String name = m.group(1);
-            ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor =
-                ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, name);
+        path.visit(new PathParser.EmptySegmentVisitor() {
+            @Override
+            public void visit(PathParser.NamedVariable namedVariable) {
+                ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor =
+                    ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, namedVariable.getName());
 
-            if(fieldDescriptor.isEmpty())
-                throw new IllegalArgumentException("Couldn't find path param: " + name
-                                                   + " in input type: " + inputDescriptor.toProto());
+                if(fieldDescriptor.isEmpty())
+                    throw new IllegalArgumentException("Couldn't find path param: " + namedVariable.getName()
+                                                       + " in input type: " + inputDescriptor.toProto());
 
-            pathParams.add(new PathParam(name, fieldDescriptor));
-        }
+                pathParams.add(new PathParam(namedVariable.getName(), fieldDescriptor));
+            }
+        });
 
         return pathParams.build();
     }
