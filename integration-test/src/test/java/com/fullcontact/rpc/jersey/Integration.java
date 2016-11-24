@@ -1,6 +1,7 @@
 package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.NestedType;
+import com.fullcontact.rpc.TestEnum;
 import com.fullcontact.rpc.TestRequest;
 import com.fullcontact.rpc.TestResponse;
 import com.fullcontact.rpc.TestServiceGrpcJerseyResource;
@@ -73,10 +74,14 @@ public class Integration {
     public void testAdvancedGet() throws Exception {
         // /users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         String responseJson = resources.getJerseyTest()
-                                 .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
-                                 .request()
-                                 .buildGet()
-                                 .invoke(String.class);
+                                       .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "SECOND")
+                                       .queryParam("uint3", "5678") // ensure path param has precedence
+                                       .queryParam("x", "y")
+                                       .request()
+                                       .buildGet()
+                                       .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -84,6 +89,8 @@ public class Integration {
 
         assertThat(response.getRequest().getS()).isEqualTo("hello/string1/test");
         assertThat(response.getRequest().getUint3()).isEqualTo(1234);
+        assertThat(response.getRequest().getD()).isEqualTo(1234.5678);
+        assertThat(response.getRequest().getEnu()).isEqualTo(TestEnum.SECOND);
         assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
     }
 }

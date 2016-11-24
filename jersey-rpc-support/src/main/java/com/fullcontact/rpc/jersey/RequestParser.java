@@ -18,6 +18,7 @@ import io.grpc.stub.MetadataUtils;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -38,15 +39,15 @@ public class RequestParser {
             throws InvalidProtocolBufferException {
         Set<DescriptorProtos.FieldDescriptorProto> pathDescriptors = Sets.newHashSet(pathParams);
 
-        for(Descriptors.FieldDescriptor fd : builder.getDescriptorForType().getFields()) {
-            if(!pathDescriptors.contains(fd.toProto())) {
-                String fieldName = fd.getName();
-                String value = uriInfo.getQueryParameters().getFirst(fieldName);
+        for(String queryParam : uriInfo.getQueryParameters().keySet()) {
+            ImmutableList<Descriptors.FieldDescriptor> descriptors =
+                ProtobufDescriptorJavaUtil.fieldPath(builder.getDescriptorForType(), queryParam);
+            if(!descriptors.isEmpty()) {
+                Descriptors.FieldDescriptor field = Iterables.getLast(descriptors);
 
-                if(value == null || value.isEmpty())
-                    continue;
-
-                setFieldSafely(builder, fd, value);
+                if(!pathDescriptors.contains(field.toProto())) {
+                    setFieldSafely(builder, queryParam, uriInfo.getQueryParameters().getFirst(queryParam));
+                }
             }
         }
     }
