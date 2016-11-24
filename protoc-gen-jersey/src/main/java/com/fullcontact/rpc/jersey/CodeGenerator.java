@@ -67,7 +67,13 @@ public class CodeGenerator {
             // otherwise it's fully qualified
             String protoPackage = fdProto.getPackage();
             for(DescriptorProtos.DescriptorProto d : fdProto.getMessageTypeList()) {
-                lookup.put("." + protoPackage + "." + d.getName(), fd.findMessageTypeByName(d.getName()));
+                String prefix = ".";
+
+                if(!Strings.isNullOrEmpty(protoPackage)) {
+                    prefix += protoPackage + ".";
+                }
+
+                lookup.put(prefix + d.getName(), fd.findMessageTypeByName(d.getName()));
             }
 
             // Find RPC methods with HTTP extensions
