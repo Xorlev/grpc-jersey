@@ -98,7 +98,7 @@ Short-term roadmap:
 
 - [ ] Documentation
 - [x] Support recursive path expansion for path parameters
-- [ ] Support recursive path expansion for query parameters
+- [x] Support recursive path expansion for query parameters
 - [x] Support recursive path expansion for body parameters
 - [x] `additional_bindings` support
 - [x] Support for wildcard `*` and `**` anonymous/named path expansion

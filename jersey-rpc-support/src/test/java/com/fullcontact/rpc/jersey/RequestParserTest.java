@@ -29,7 +29,7 @@ public class RequestParserTest {
             .put("s", "string")
             .put("bytearray", "string")
             .put("boolean", "true")
-//            .put("nt.f1", "2") TODO(xorlev): support nested queryparam expansion
+            .put("nt.f1", "2")
             .put("uint3", "3000000000")
             .put("int3", "2000000000")
             .put("uint6", "10000000000000000000")
@@ -45,7 +45,7 @@ public class RequestParserTest {
         assertThat(r.getS()).isEqualTo("string");
         assertThat(r.getBytearray().toStringUtf8()).isEqualTo("string");
         assertThat(r.getBoolean()).isTrue();
-//        assertThat(r.getNt().getF1()).isEqualTo("2"); TODO(xorlev): support nested queryparam expansion
+        assertThat(r.getNt().getF1()).isEqualTo("2");
         assertThat(r.getUint3()).isEqualTo(-1294967296); // uint{32,64} are stored "signed" in Java
         assertThat(r.getInt3()).isEqualTo(2000000000);
         assertThat(r.getUint6()).isEqualTo(-8446744073709551616L);
