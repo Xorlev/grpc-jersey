@@ -101,13 +101,12 @@ Short-term roadmap:
 - [ ] Support recursive path expansion for query parameters
 - [x] Support recursive path expansion for body parameters
 - [x] `additional_bindings` support
-- [ ] Support for wildcard `*` and `**` path expansion
-- [ ] Other support for one-level path expansion as specified by [RFC6570](https://tools.ietf.org/html/rfc6570#section-3.2.3)
+- [x] Support for wildcard `*` and `**` anonymous/named path expansion
 - [ ] `response_body` support
 - [ ] Performance tests
 - [ ] Generic/pluggable error handling
 - [ ] [possible] supporting streaming RPCs
-- [ ] Publishing to Maven Central
+- [x] Publishing to Maven Central (Sonatype Snapshots currently)
 
 ## Build Process
 
