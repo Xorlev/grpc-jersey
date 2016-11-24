@@ -120,6 +120,52 @@ public class CodeGenerator {
     }
 
     /**
+     * Creates a generator spec for a given service resource and all of the methods.
+     *
+     * @param descriptorTable mapping of proto.path.MessageType to the descriptor instance
+     * @param fileDescriptorProto file descriptor of the origin service
+     * @param methodSpecs list of methods in the given service
+     * @param isProxy should this resource use client stubs or implbase?
+     * @return
+     */
+    @VisibleForTesting
+    ResourceToGenerate buildResourceSpec(
+        Map<String, Descriptors.Descriptor> descriptorTable,
+        DescriptorProtos.FileDescriptorProto fileDescriptorProto,
+        List<ServiceAndMethod> methodSpecs,
+        boolean isProxy) {
+        Descriptors.ServiceDescriptor serviceDescriptor = methodSpecs.get(0).getServiceDescriptor();
+        DescriptorProtos.ServiceDescriptorProto sdp = methodSpecs.get(0).getServiceDescriptor().toProto();
+        String packageName = ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto);
+        String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(sdp);
+        String grpcImplClass = (isProxy)?
+                               ProtobufDescriptorJavaUtil.grpcStubClass(fileDescriptorProto, sdp):
+                               ProtobufDescriptorJavaUtil.grpcImplBaseClass(fileDescriptorProto, sdp);
+        String fileName = packageName.replace('.', '/') + "/" + className + ".java";
+
+        ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
+        descriptorTable.forEach((k,v) -> System.err.println(k + " -> " + v));
+        for(ServiceAndMethod sam : methodSpecs) {
+            System.err.println(sam.getMethodDescriptor().getInputType());
+            Descriptors.Descriptor inputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getInputType());
+            Descriptors.Descriptor outputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getOutputType());
+            List<ResourceMethodToGenerate> methodToGenerate = parseRule(sam, inputDescriptor, outputDescriptor);
+            methods.addAll(methodToGenerate);
+        }
+
+        return ResourceToGenerate
+            .builder()
+            .serviceDescriptor(serviceDescriptor)
+            .javaPackage(ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto))
+            .className(className)
+            .grpcStub(grpcImplClass)
+            .methods(methods.build())
+            .parseHeaders(isProxy)
+            .fileName(fileName)
+            .build();
+    }
+
+    /**
      * Generates a {@link ResourceMethodToGenerate} spec from the {@link ServiceAndMethod} plus the input/output RPC
      * message descriptors
      *
@@ -214,50 +260,6 @@ public class CodeGenerator {
         }
 
         return methodsToGenerate.build();
-    }
-
-    /**
-     * Creates a generator spec for a given service resource and all of the methods.
-     *
-     * @param descriptorTable mapping of proto.path.MessageType to the descriptor instance
-     * @param fileDescriptorProto file descriptor of the origin service
-     * @param methodSpecs list of methods in the given service
-     * @param isProxy should this resource use client stubs or implbase?
-     * @return
-     */
-    @VisibleForTesting
-    ResourceToGenerate buildResourceSpec(
-            Map<String, Descriptors.Descriptor> descriptorTable,
-            DescriptorProtos.FileDescriptorProto fileDescriptorProto,
-            List<ServiceAndMethod> methodSpecs,
-            boolean isProxy) {
-        Descriptors.ServiceDescriptor serviceDescriptor = methodSpecs.get(0).getServiceDescriptor();
-        DescriptorProtos.ServiceDescriptorProto sdp = methodSpecs.get(0).getServiceDescriptor().toProto();
-        String packageName = ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto);
-        String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(sdp);
-        String grpcImplClass = (isProxy)?
-            ProtobufDescriptorJavaUtil.grpcStubClass(fileDescriptorProto, sdp):
-            ProtobufDescriptorJavaUtil.grpcImplBaseClass(fileDescriptorProto, sdp);
-        String fileName = packageName.replace('.', '/') + "/" + className + ".java";
-
-        ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
-        for(ServiceAndMethod sam : methodSpecs) {
-            Descriptors.Descriptor inputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getInputType());
-            Descriptors.Descriptor outputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getOutputType());
-            List<ResourceMethodToGenerate> methodToGenerate = parseRule(sam, inputDescriptor, outputDescriptor);
-            methods.addAll(methodToGenerate);
-        }
-
-        return ResourceToGenerate
-            .builder()
-            .serviceDescriptor(serviceDescriptor)
-            .javaPackage(ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto))
-            .className(className)
-            .grpcStub(grpcImplClass)
-            .methods(methods.build())
-            .parseHeaders(isProxy)
-            .fileName(fileName)
-            .build();
     }
 
     public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor, PathParser.ParsedPath path) {
