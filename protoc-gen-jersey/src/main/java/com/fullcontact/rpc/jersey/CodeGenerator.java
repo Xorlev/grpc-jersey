@@ -144,9 +144,7 @@ public class CodeGenerator {
         String fileName = packageName.replace('.', '/') + "/" + className + ".java";
 
         ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
-        descriptorTable.forEach((k,v) -> System.err.println(k + " -> " + v));
         for(ServiceAndMethod sam : methodSpecs) {
-            System.err.println(sam.getMethodDescriptor().getInputType());
             Descriptors.Descriptor inputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getInputType());
             Descriptors.Descriptor outputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getOutputType());
             List<ResourceMethodToGenerate> methodToGenerate = parseRule(sam, inputDescriptor, outputDescriptor);
