@@ -56,7 +56,7 @@ public class GrpcErrorUtil {
             case INTERNAL:
                 return 500;
             case UNAVAILABLE:
-                return 403;
+                return 503;
             case DATA_LOSS:
                 return 500;
             case UNAUTHENTICATED:

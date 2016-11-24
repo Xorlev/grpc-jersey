@@ -2,4 +2,5 @@ rootProject.name = 'grpc-jersey'
 
 include 'jersey-rpc-support'
 include 'protoc-gen-jersey'
-include 'integration-test'
+include 'integration-test-serverstub'
+include 'integration-test-proxy'

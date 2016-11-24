@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Michael Rose (xorlev)
  */
 @RunWith(JUnit4.class)
-public class Integration {
+public class ServerStubIntegration {
     @ClassRule
     public static final ResourceTestRule resources =
         ResourceTestRule.builder()
