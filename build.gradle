@@ -131,6 +131,8 @@ project(":protoc-gen-jersey") {
         compile "io.grpc:grpc-protobuf:${grpcVersion}"
         compile "io.grpc:grpc-stub:${grpcVersion}"
         compile "com.github.spullara.mustache.java:compiler:0.9.4"
+
+        testCompile 'org.glassfish.jersey.core:jersey-common:2.24.1'
     }
 
     protobuf {
@@ -202,4 +204,53 @@ project(":protoc-gen-jersey") {
     buildArtifacts.dependsOn(shadowJar)
     buildArtifacts.dependsOn(prependShellStub)
     shadowJar.finalizedBy(prependShellStub)
+}
+
+project(":integration-test") {
+    apply plugin: 'com.google.protobuf'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    compileJava.dependsOn(':protoc-gen-jersey:shadowJar')
+
+    ['java', 'grpc', 'jersey'].each { plugin ->
+        sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/${plugin}");
+        sourceSets.test.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/test/${plugin}");
+    }
+
+    dependencies {
+        compile 'org.slf4j:jul-to-slf4j:1.7.21'
+        testCompile project(':protoc-gen-jersey')
+        testCompile('io.dropwizard:dropwizard-core:1.0.5') {
+            exclude group: 'org.eclipse.jetty'
+        }
+        testCompile('io.dropwizard:dropwizard-testing:1.0.5') {
+            exclude group: 'org.eclipse.jetty'
+        }
+        testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:2.23.2'
+
+
+    }
+
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+            jersey {
+                path = 'protoc-gen-jersey/build/protoc-gen-jersey'
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+                jersey {}
+            }
+        }
+    }
 }

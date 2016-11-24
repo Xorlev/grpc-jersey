@@ -68,6 +68,11 @@ public class GrpcErrorUtil {
 
     public static GrpcError throwableToStatus(Throwable t) {
         Status status = Status.fromThrowable(t);
+
+        if(t instanceof InvalidProtocolBufferException) {
+            status = Status.INVALID_ARGUMENT.withCause(t);
+        }
+
         Metadata trailer = Status.trailersFromThrowable(t);
 
         int statusCode = grpcToHttpStatus(status);

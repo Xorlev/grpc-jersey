@@ -15,7 +15,7 @@ service TestService {
         };
     }
     rpc TestMethod3 (TestRequest) returns (TestResponse) {
-        option (google.api.http).get = "/users/{s=hello/**}/{uint3}/{nt.f1}/*/**/test";
+        option (google.api.http).get = "/users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test";
     }
 }
 enum TestEnum {
@@ -43,7 +43,5 @@ message TestRequest {
     NestedType nt = 11;
 }
 message TestResponse {
-    string f1 = 1;
-    uint64 f2 = 2;
-    TestEnum f3 = 3;
+    TestRequest request = 1;
 }
