@@ -1,10 +1,14 @@
 language: java
+install: echo "skip 'gradle assemble' step"
+script: gradle build --continue
+env:
+  - GRADLE_OPTS="-Dorg.gradle.daemon=false"
 jdk:
   - oraclejdk8
 cache:
   directories:
-    - $HOME/.gradle
+    - $HOME/.gradle/caches
+    - $HOME/.gradle/wrapper
     - $HOME/.m2
 before_cache:
   - rm -f $HOME/.gradle/caches/**/*.lock
-  - rm -rf $HOME/.gradle/daemon
