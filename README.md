@@ -1,5 +1,4 @@
-# grpc-jersey
-
+# grpc-jersey [![Build Status](https://travis-ci.org/fullcontact/grpc-jersey.svg?branch=master)](https://travis-ci.org/fullcontact/grpc-jersey)
 protoc plugin for compiling [gRPC](https://www.grpc.io/) service endpoints as Jersey/REST endpoints. Uses the
 [HttpRule](https://cloud.google.com/service-management/reference/rpc/google.api#http) annotations also
 used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) project.
