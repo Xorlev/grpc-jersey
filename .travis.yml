@@ -1,6 +1,6 @@
 language: java
 install: echo "skip 'gradle assemble' step"
-script: gradle build --continue
+script: ./gradlew check
 env:
   - GRADLE_OPTS="-Dorg.gradle.daemon=false"
 jdk:
