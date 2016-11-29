@@ -5,3 +5,6 @@ cache:
   directories:
     - $HOME/.gradle
     - $HOME/.m2
+before_cache:
+  - rm -f $HOME/.gradle/caches/**/*.lock
+  - rm -rf $HOME/.gradle/daemon
