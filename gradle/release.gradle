@@ -1,6 +1,6 @@
 apply plugin: 'release'
 
-[ uploadIvyLocal: 'uploadLocal', uploadArtifactory: 'artifactoryPublish', buildWithArtifactory: 'build' ].each { key, value ->
+[ uploadIvyLocal: 'uploadLocal', uploadMaven: 'uploadMavenCentral', buildWithArtifactory: 'build' ].each { key, value ->
     // Call out to compile against internal repository
     task "${key}"(type: GradleBuild) {
         startParameter = project.gradle.startParameter.newInstance()
@@ -25,7 +25,7 @@ task forceRelease {
 }
 release.dependsOn([forceCandidate, forceRelease])
 
-task releaseSnapshot(dependsOn: [uploadArtifactory])
+task releaseSnapshot(dependsOn: [uploadMaven])
 
 // Ensure our versions look like the project status before publishing
 task verifyStatus << {
@@ -34,10 +34,10 @@ task verifyStatus << {
         throw new GradleException("Version (${version}) needs -SNAPSHOT if publishing snapshot")
     }
 }
-uploadArtifactory.dependsOn(verifyStatus)
+uploadMaven.dependsOn(verifyStatus)
 
 // Ensure upload happens before taggging, hence upload failures will leave repo in a revertable state
-preTagCommit.dependsOn([uploadArtifactory])
+preTagCommit.dependsOn([uploadMaven])
 
 
 gradle.taskGraph.whenReady { taskGraph ->
@@ -46,7 +46,7 @@ gradle.taskGraph.whenReady { taskGraph ->
 
     if (hasRelease) {
         assert indexOf(build) < indexOf(unSnapshotVersion), 'build target has to be after unSnapshotVersion'
-        assert indexOf(uploadArtifactory) < indexOf(preTagCommit), 'preTagCommit has to be after uploadArtifactory'
+        assert indexOf(uploadMaven) < indexOf(preTagCommit), 'preTagCommit has to be after uploadArtifactory'
     }
 }
 
