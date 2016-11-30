@@ -10,3 +10,5 @@ build/
 *.iws
 .project
 .settings/
+.gradletasknamecache
+classes/
