@@ -163,12 +163,14 @@ project(":protoc-gen-jersey") {
 
     artifacts {
         archives("$buildDir/protoc-gen-jersey-osx-x86_64.exe" as File) {
+            name "protoc-gen-jersey"
             classifier "osx-x86_64"
             type "exe"
             extension "exe"
             builtBy buildArtifacts
         }
         archives("$buildDir/protoc-gen-jersey-linux-x86_64.exe" as File) {
+            name "protoc-gen-jersey"
             classifier "linux-x86_64"
             type "exe"
             extension "exe"
