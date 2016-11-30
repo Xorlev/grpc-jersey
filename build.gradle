@@ -25,12 +25,9 @@ allprojects {
 }
 
 apply from: file('gradle/convention.gradle')
-apply from: file('gradle/release.gradle')
-apply from: file('gradle/maven.gradle')
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'maven'
     apply plugin: 'project-report'
 
     group = "com.fullcontact.${rootProject.name}"
@@ -77,6 +74,7 @@ subprojects {
 }
 
 project(":jersey-rpc-support") {
+    apply plugin: 'maven'
     apply plugin: 'com.google.protobuf'
 
     sourceCompatibility = 1.8
@@ -113,6 +111,7 @@ project(":jersey-rpc-support") {
 }
 
 project(":protoc-gen-jersey") {
+    apply plugin: 'maven'
     apply plugin: 'com.google.protobuf'
     apply plugin: 'com.github.johnrengelman.shadow'
 
@@ -305,3 +304,7 @@ project(":integration-test-proxy") {
         }
     }
 }
+
+
+apply from: file('gradle/release.gradle')
+apply from: file('gradle/maven.gradle')

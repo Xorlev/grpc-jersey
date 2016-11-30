@@ -1,6 +1,5 @@
 // Maven side of things
-subprojects {
-  apply plugin: 'maven' // Java plugin has to have been already applied for the conf2scope mappings to work
+configure(subprojects.findAll{it.getPlugins().hasPlugin(MavenPlugin)}) {
   apply plugin: 'signing'
 
   signing {
@@ -8,12 +7,12 @@ subprojects {
     sign configurations.archives
   }
 
-/**
- * Publishing to Maven Central example provided from http://jedicoder.blogspot.com/2011/11/automated-gradle-project-deployment-to.html
- * artifactory will execute uploadArchives to force generation of ivy.xml, and we don't want that to trigger an upload to maven
- * central, so using custom upload task.
- */
-  task uploadMavenCentral(type:Upload, dependsOn: signArchives) {
+  /**
+   * Publishing to Maven Central example provided from http://jedicoder.blogspot.com/2011/11/automated-gradle-project-deployment-to.html
+   * artifactory will execute uploadArchives to force generation of ivy.xml, and we don't want that to trigger an upload to maven
+   * central, so using custom upload task.
+   */
+  task uploadMavenCentral(type: Upload, dependsOn: signArchives) {
     configuration = configurations.archives
     onlyIf { ['release', 'snapshot'].contains(project.status) }
     repositories.mavenDeployer {
@@ -22,8 +21,8 @@ subprojects {
       // To test deployment locally, use the following instead of oss.sonatype.org
       //repository(url: "file://localhost/${rootProject.rootDir}/repo")
 
-      def sonatypeUsername = rootProject.hasProperty('sonatypeUsername')?rootProject.sonatypeUsername:''
-      def sonatypePassword = rootProject.hasProperty('sonatypePassword')?rootProject.sonatypePassword:''
+      def sonatypeUsername = rootProject.hasProperty('sonatypeUsername') ? rootProject.sonatypeUsername : ''
+      def sonatypePassword = rootProject.hasProperty('sonatypePassword') ? rootProject.sonatypePassword : ''
 
       repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
         authentication(userName: sonatypeUsername, password: sonatypePassword)
