@@ -152,25 +152,27 @@ project(":protoc-gen-jersey") {
     }
 
     task buildArtifacts(type: Copy) {
-        from("$buildDir") {
+        from(buildDir) {
             rename 'protoc-gen-jersey$', '$0-osx-x86_64.exe'
         }
-        from("$buildDir") {
+        from(buildDir) {
             rename 'protoc-gen-jersey$', '$0-linux-x86_64.exe'
         }
-        into buildDir
+        into "$buildDir/archives"
     }
 
     artifacts {
-        archives("$buildDir/protoc-gen-jersey-osx-x86_64.exe" as File) {
+        archives("$buildDir/archives/protoc-gen-jersey-osx-x86_64.exe" as File) {
             name "protoc-gen-jersey"
+//            file "$buildDir/protoc-gen-jersey-osx-x86_64.exe" as File
             classifier "osx-x86_64"
             type "exe"
             extension "exe"
             builtBy buildArtifacts
         }
-        archives("$buildDir/protoc-gen-jersey-linux-x86_64.exe" as File) {
+        archives("$buildDir/archives/protoc-gen-jersey-linux-x86_64.exe" as File) {
             name "protoc-gen-jersey"
+//            file "$buildDir/protoc-gen-jersey-linux-x86_64.exe" as File
             classifier "linux-x86_64"
             type "exe"
             extension "exe"
