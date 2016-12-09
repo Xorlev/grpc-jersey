@@ -1,27 +1,23 @@
 # grpc-jersey [![Build Status](https://travis-ci.org/fullcontact/grpc-jersey.svg?branch=master)](https://travis-ci.org/fullcontact/grpc-jersey)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fullcontact.grpc-jersey/protoc-gen-jersey/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fullcontact.grpc-jersey/protoc-gen-jersey)
 protoc plugin for compiling [gRPC](https://www.grpc.io/) service endpoints as Jersey/REST endpoints. Uses the
 [HttpRule](https://cloud.google.com/service-management/reference/rpc/google.api#http) annotations also
 used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) project.
 
 ## Example Usage
 
-Artifacts are available on the Sonatype snapshots repository, and eventually on Maven Central once a release.
-
-```
-repositories {
-    maven {
-        name "Sonatype Snapshots"
-        url "https://oss.sonatype.org/content/repositories/snapshots"
-    }
-}
-```
-
-As of the writing of this document, the current released version is *0.1.0-SNAPSHOT*.
+Snapshot artifacts are available on the Sonatype snapshots repository, releases are available on Maven Central.
 
 Example provided here uses the [gradle-protobuf-plugin](https://github.com/google/protobuf-gradle-plugin)
 but an example using Maven can be found [in examples](https://github.com/fullcontact/grpc-jersey/tree/master/examples/maven/pom.xml).
 
 ```groovy
+ext {
+    protobufVersion = "3.1.0"
+    grpcVersion = "1.0.2"
+    grpcJerseyVersion = "0.1.0"
+}
+
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${protobufVersion}"
@@ -43,7 +39,7 @@ protobuf {
 }
 ```
 
-You'll also have to be sure to include the `jersey-rpc-support` package:
+You'll also have to be sure to include the `jersey-rpc-support` package in your service:
 
 ```groovy
 compile "com.fullcontact.grpc-jersey:jersey-rpc-support:${grpcJerseyVersion}"
@@ -85,7 +81,7 @@ through the same `ServerInterceptor` stack. It's recommended that the client stu
 uses a `InProcessTransport` if living in the same JVM as the gRPC server. A normal grpc-netty channel can be used
 for a more traditional reverse proxy.
 
-TODO: show example of proxy vs. implbase
+You can find an example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
 
 ## Project status
 
