@@ -209,15 +209,13 @@ project(":protoc-gen-jersey") {
     shadowJar.finalizedBy(prependShellStub)
 }
 
-project(":integration-test-serverstub") {
+project(":integration-test-base") {
     apply plugin: 'com.google.protobuf'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    compileJava.dependsOn(':protoc-gen-jersey:shadowJar')
-
-    ['java', 'grpc', 'jersey'].each { plugin ->
+    ['java', 'grpc'].each { plugin ->
         sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/${plugin}");
         sourceSets.test.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/test/${plugin}");
     }
@@ -234,6 +232,49 @@ project(":integration-test-serverstub") {
         testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:2.23.2'
 
 
+    }
+
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
+        }
+    }
+}
+
+project(":integration-test-serverstub") {
+    apply plugin: 'com.google.protobuf'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    compileJava.dependsOn(':protoc-gen-jersey:shadowJar')
+
+    ['java', 'grpc', 'jersey'].each { plugin ->
+        sourceSets.main.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/main/${plugin}");
+        sourceSets.test.java.srcDirs += file("${protobuf.generatedFilesBaseDir}/test/${plugin}");
+    }
+
+    dependencies {
+        testCompile(project(':integration-test-base').sourceSets.test.output)
+        testCompile project(':protoc-gen-jersey')
+        testCompile('io.dropwizard:dropwizard-core:1.0.5') {
+            exclude group: 'org.eclipse.jetty'
+        }
+        testCompile('io.dropwizard:dropwizard-testing:1.0.5') {
+            exclude group: 'org.eclipse.jetty'
+        }
+        testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:2.23.2'
     }
 
     protobuf {
@@ -272,7 +313,7 @@ project(":integration-test-proxy") {
     }
 
     dependencies {
-        compile 'org.slf4j:jul-to-slf4j:1.7.21'
+        testCompile(project(':integration-test-base').sourceSets.test.output)
         testCompile project(':protoc-gen-jersey')
         testCompile('io.dropwizard:dropwizard-core:1.0.5') {
             exclude group: 'org.eclipse.jetty'
