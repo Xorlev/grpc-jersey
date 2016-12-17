@@ -63,6 +63,23 @@ public abstract class IntegrationBase {
     }
 
     @Test
+    public void testPost__nestedBinding() throws Exception {
+        NestedType request = NestedType.newBuilder().setF1("World").build();
+        String responseJson = resources().getJerseyTest()
+                 .target("/users_nested/")
+                 .request()
+                 .buildPost(Entity.entity(JsonFormat.printer().print(request),
+                                          "application/json; charset=utf-8"))
+                 .invoke(String.class);
+
+        TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+        JsonFormat.parser().merge(responseJson, responseFromJson);
+        TestResponse response = responseFromJson.build();
+
+        assertThat(response.getRequest().getNt()).isEqualTo(request);
+    }
+
+    @Test
     public void testAdvancedGet() throws Exception {
         // /users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         String responseJson = resources().getJerseyTest()

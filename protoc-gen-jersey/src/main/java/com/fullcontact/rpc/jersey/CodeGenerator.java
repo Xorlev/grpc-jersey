@@ -189,6 +189,7 @@ public class CodeGenerator {
             .build();
 
         ImmutableList.Builder<ResourceMethodToGenerate> methodsToGenerate = ImmutableList.builder();
+        int methodIndex = 0;
         for(HttpRule rule : rules) {
             String method = rule.getPatternCase().toString();
             String path = "";
@@ -257,7 +258,8 @@ public class CodeGenerator {
                 pathParams,
                 bodyFieldPath,
                 ProtobufDescriptorJavaUtil.genClassName(inputDescriptor),
-                ProtobufDescriptorJavaUtil.genClassName(outputDescriptor)
+                ProtobufDescriptorJavaUtil.genClassName(outputDescriptor),
+                methodIndex++
             ));
         }
 
@@ -336,6 +338,7 @@ public class CodeGenerator {
         String bodyFieldPath;
         String requestType;
         String responseType;
+        int methodIndex;
 
         String methodNameLower() {
             return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, methodName);

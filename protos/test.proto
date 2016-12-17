@@ -10,8 +10,12 @@ service TestService {
     }
     rpc TestMethod2 (TestRequest) returns (TestResponse) {
         option (google.api.http) = {
-            post: "/users/",
-            body: "*";
+            post: "/users/"
+            body: "*"
+            additional_bindings {
+                post: "/users_nested"
+                body: "nt"
+            };
         };
     }
     rpc TestMethod3 (TestRequest) returns (TestResponse) {

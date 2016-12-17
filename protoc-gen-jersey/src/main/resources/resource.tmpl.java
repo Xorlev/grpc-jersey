@@ -29,7 +29,7 @@ public class {{className}} {
 
     @{{method}}
     @Path("{{path}}")
-    public void {{methodName}}_{{method}}(
+    public void {{methodName}}_{{method}}_{{methodIndex}}(
             {{#pathParams}}
             @PathParam("{{name}}") String {{nameSanitized}},
             {{/pathParams}}
