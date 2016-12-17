@@ -5,6 +5,8 @@ used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) proje
 
 ## Example Usage
 
+grpc-jersey requires a minimum of Java 8 at this time.
+
 Snapshot artifacts are available on the Sonatype snapshots repository, releases are available on Maven Central.
 
 Example provided here uses the [gradle-protobuf-plugin](https://github.com/google/protobuf-gradle-plugin)
@@ -99,8 +101,9 @@ Short-term roadmap:
 - [ ] `response_body` support
 - [ ] Performance tests
 - [ ] Generic/pluggable error handling
-- [ ] [possible] supporting streaming RPCs
-- [x] Publishing to Maven Central (Sonatype Snapshots currently)
+- [ ] Supporting streaming RPCs
+ - [ ] Server streaming
+ - [ ] Client streaming
 
 ## Build Process
 
