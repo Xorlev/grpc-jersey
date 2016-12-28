@@ -1,12 +1,11 @@
 package com.fullcontact.rpc.jersey;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
 
-import com.fullcontact.rpc.jersey.util.Rule;
-import com.fullcontact.rpc.jersey.util.YamlConfig;
+import com.fullcontact.rpc.jersey.util.YamlHttpConfig;
+import com.fullcontact.rpc.jersey.util.YamlHttpRule;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -28,14 +27,11 @@ import lombok.Builder;
 import lombok.Value;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -62,12 +58,12 @@ public class CodeGenerator {
             HttpRule.getDescriptor().getFile()
         );
 
-        YamlConfig yamlConfig = null;
+        YamlHttpConfig yamlConfig = null;
         if(this.getClass().getResourceAsStream("/http_api_config.yml") != null) {  //TODO: read in the YAML correctly
             InputStream yamlStream = this.getClass().getResourceAsStream("/http_api_config.yml");
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
             try {
-                yamlConfig = mapper.readValue(yamlStream, YamlConfig.class);
+                yamlConfig = mapper.readValue(yamlStream, YamlHttpConfig.class);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to parse YAML", e);
             }
@@ -104,7 +100,7 @@ public class CodeGenerator {
                 for(DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
                     String fullMethodName = serviceDescriptor.getFullName() +"." + methodProto.getName();
                     if(yamlConfig != null){   //Check to see if the rules are defined in the YAML
-                        for(Rule rule :yamlConfig.getRules()){
+                        for(YamlHttpRule rule :yamlConfig.getRules()){
                             if(rule.getSelector().equals(fullMethodName) || rule.getSelector().equals("*")){ //TODO:  com.foo.*
                                 //YAML http rules override proto files. - https://cloud.google.com/endpoints/docs/grpc-service-config
                                 DescriptorProtos.MethodOptions yamlOptions = DescriptorProtos.MethodOptions.newBuilder().setExtension(AnnotationsProto.http, rule.buildHttpRule()).build();

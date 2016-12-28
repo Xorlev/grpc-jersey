@@ -4,10 +4,18 @@ import com.google.api.HttpRule;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-public class Rule {
+/**
+ * Created by kylehansen @Sypticus on 12/28/16.
+ */
+public class YamlHttpRule {
   private String selector;
   private String get;
+  private String post;
+  private String put;
+  private String delete;
+  private String body;
+  private List<YamlHttpRule> additionalBindings;
+
 
   public String getSelector() {
     return selector;
@@ -57,19 +65,13 @@ public class Rule {
     this.body = body;
   }
 
-  public List<Rule> getAdditionalBindings() {
+  public List<YamlHttpRule> getAdditionalBindings() {
     return additionalBindings;
   }
 
-  public void setAdditionalBindings(List<Rule> additionalBindings) {
+  public void setAdditionalBindings(List<YamlHttpRule> additionalBindings) {
     this.additionalBindings = additionalBindings;
   }
-
-  private String post;
-  private String put;
-  private String delete;
-  private String body;
-  private List<Rule> additionalBindings;
 
 
   public HttpRule buildHttpRule(){
@@ -90,7 +92,7 @@ public class Rule {
       builder.setBody(body);
     }
     if(additionalBindings != null){
-      builder.addAllAdditionalBindings(additionalBindings.stream().map(Rule::buildHttpRule).collect(Collectors.toList()));
+      builder.addAllAdditionalBindings(additionalBindings.stream().map(YamlHttpRule::buildHttpRule).collect(Collectors.toList()));
     }
 
     return builder.build();
