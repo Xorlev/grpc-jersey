@@ -1,7 +1,12 @@
 package com.fullcontact.rpc.jersey;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
 
+import com.fullcontact.rpc.jersey.util.Rule;
+import com.fullcontact.rpc.jersey.util.YamlConfig;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -17,13 +22,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.protobuf.DescriptorProtos;
-import com.google.protobuf.Descriptors;
+import com.google.protobuf.*;
 import com.google.protobuf.compiler.PluginProtos;
 import lombok.Builder;
 import lombok.Value;
 
-import java.io.StringWriter;
+import java.io.*;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +61,18 @@ public class CodeGenerator {
             AnnotationsProto.getDescriptor(),
             HttpRule.getDescriptor().getFile()
         );
+
+        YamlConfig yamlConfig = null;
+        if(this.getClass().getResourceAsStream("/http_api_config.yml") != null) {  //TODO: read in the YAML correctly
+            InputStream yamlStream = this.getClass().getResourceAsStream("/http_api_config.yml");
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+            try {
+                yamlConfig = mapper.readValue(yamlStream, YamlConfig.class);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to parse YAML", e);
+            }
+        }
+
         for(DescriptorProtos.FileDescriptorProto fdProto : request.getProtoFileList()) {
             // Descriptors are provided in dependency-topological order
             // each time we collect a new FileDescriptor, we add it to a
@@ -85,6 +102,16 @@ public class CodeGenerator {
             for(Descriptors.ServiceDescriptor serviceDescriptor : fd.getServices()) {
                 DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = serviceDescriptor.toProto();
                 for(DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
+                    String fullMethodName = serviceDescriptor.getFullName() +"." + methodProto.getName();
+                    if(yamlConfig != null){   //Check to see if the rules are defined in the YAML
+                        for(Rule rule :yamlConfig.getRules()){
+                            if(rule.getSelector().equals(fullMethodName) || rule.getSelector().equals("*")){ //TODO:  com.foo.*
+                                //YAML http rules override proto files. - https://cloud.google.com/endpoints/docs/grpc-service-config
+                                DescriptorProtos.MethodOptions yamlOptions = DescriptorProtos.MethodOptions.newBuilder().setExtension(AnnotationsProto.http, rule.buildHttpRule()).build();
+                                methodProto = DescriptorProtos.MethodDescriptorProto.newBuilder().mergeFrom(methodProto).setOptions(yamlOptions).build();
+                            }
+                        }
+                    }
                     if(methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
                         // TODO(xorlev): support server streaming
                         if(methodProto.getServerStreaming() || methodProto.getClientStreaming())
@@ -94,7 +121,6 @@ public class CodeGenerator {
                     }
                 }
             }
-
             if(!methodsToGenerate.isEmpty())
                 generateResource(response, lookup, fdProto, methodsToGenerate, isProxy);
         }

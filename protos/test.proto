@@ -21,6 +21,12 @@ service TestService {
     rpc TestMethod3 (TestRequest) returns (TestResponse) {
         option (google.api.http).get = "/users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test";
     }
+    rpc TestMethod4 (TestRequest) returns (TestResponse) {
+      //Defined in Yaml
+    }
+    rpc TestMethod5 (TestRequest) returns (TestResponse) {
+        //Defined in Yaml
+    }
 }
 enum TestEnum {
     FIRST = 0;

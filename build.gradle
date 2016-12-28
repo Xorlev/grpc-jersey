@@ -130,6 +130,8 @@ project(":protoc-gen-jersey") {
         compile "io.grpc:grpc-protobuf:${grpcVersion}"
         compile "io.grpc:grpc-stub:${grpcVersion}"
         compile "com.github.spullara.mustache.java:compiler:0.9.4"
+        compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.5"
+        compile "com.fasterxml.jackson.core:jackson-databind:2.8.5"
 
         testCompile 'org.glassfish.jersey.core:jersey-common:2.24.1'
     }

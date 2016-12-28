@@ -1,0 +1,4 @@
+http:
+  rules:
+  - selector: endpoints.examples.bookstore.BookStore.ListShelves
+    get: '/v1/shelves'

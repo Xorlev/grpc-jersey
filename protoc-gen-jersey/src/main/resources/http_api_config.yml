@@ -1,0 +1,9 @@
+http:
+  rules:
+  - selector: TestService.TestMethod4
+    get: /yaml_user/{uint3}
+    additionalBindings:
+       - post: /yaml_users_nested
+         body: '*'  # Star can't be parsed.
+  - selector: TestService.TestMethod5
+    get: /yaml_users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
