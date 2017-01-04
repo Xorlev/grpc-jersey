@@ -347,7 +347,7 @@ project(":integration-test-proxy") {
             all()*.plugins {
                 grpc {}
                 jersey {
-                    option 'proxy,yaml=/Users/kylehansen/dev/opensource/grpc-jersey/integration-test-base/src/test/proto/http_api_config.yml'
+                    option 'proxy,yaml=integration-test-base/src/test/proto/http_api_config.yml'
                 }
             }
         }
