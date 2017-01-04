@@ -22,14 +22,13 @@ service TestService {
         option (google.api.http).get = "/users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test";
     }
     rpc TestMethod4 (TestRequest) returns (TestResponse) {
-      //Defined in Yaml
+        //Defined in Yaml
     }
     rpc TestMethod5 (TestRequest) returns (TestResponse) {
         //Defined in Yaml
     }
-
     rpc TestMethod6 (TestRequest) returns (TestResponse) {
-       //Defined in Yaml
+        //Defined in Yaml
     }
 
 }

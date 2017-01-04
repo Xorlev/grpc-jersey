@@ -1,24 +1,27 @@
 package com.fullcontact.rpc.jersey.yaml;
 
 import com.google.api.HttpRule;
-import lombok.Data;
+import lombok.Value;
 
 import java.util.List;
 import java.util.stream.Collectors;
 /**
  * Created by kylehansen @Sypticus on 12/28/16.
+ *
+ * HTTPRules defined in the .yml will be parsed into a YamlHTTPRule, from which a com.google.api.HttpRule can be generated.
  */
-@Data
-public class YamlHttpRule {
-  private String selector;
-  private String get;
-  private String post;
-  private String put;
-  private String delete;
-  private String body;
-  private List<YamlHttpRule> additionalBindings;
 
-  public HttpRule buildHttpRule(){
+@Value
+public class YamlHttpRule {
+  String selector;
+  String get;
+  String post;
+  String put;
+  String delete;
+  String body;
+  List<YamlHttpRule> additionalBindings;
+
+  public HttpRule buildHttpRule() {
     HttpRule.Builder builder = HttpRule.newBuilder();
     if(get != null){
       builder.setGet(get);

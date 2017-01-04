@@ -84,12 +84,16 @@ public class CodeGenerator {
                 DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = serviceDescriptor.toProto();
                 for(DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
                     String fullMethodName = serviceDescriptor.getFullName() +"." + methodProto.getName();
-                    if(yamlConfig.isPresent()){   //Check to see if the rules are defined in the YAML
-                        for(YamlHttpRule rule :yamlConfig.get().getRules()){
-                            if(rule.getSelector().equals(fullMethodName) || rule.getSelector().equals("*")){ //TODO:  com.foo.*
-                                //YAML http rules override proto files. - https://cloud.google.com/endpoints/docs/grpc-service-config
-                                DescriptorProtos.MethodOptions yamlOptions = DescriptorProtos.MethodOptions.newBuilder().setExtension(AnnotationsProto.http, rule.buildHttpRule()).build();
-                                methodProto = DescriptorProtos.MethodDescriptorProto.newBuilder().mergeFrom(methodProto).setOptions(yamlOptions).build();
+                    if(yamlConfig.isPresent()) {   //Check to see if the rules are defined in the YAML
+                        for(YamlHttpRule rule : yamlConfig.get().getRules()) {
+                            if(rule.getSelector().equals(fullMethodName) || rule.getSelector().equals("*")) { //TODO:  com.foo.*
+                                DescriptorProtos.MethodOptions yamlOptions = DescriptorProtos.MethodOptions.newBuilder()
+                                    .setExtension(AnnotationsProto.http, rule.buildHttpRule())
+                                    .build();
+                                methodProto = DescriptorProtos.MethodDescriptorProto.newBuilder()
+                                    .mergeFrom(methodProto)
+                                    .setOptions(yamlOptions)
+                                    .build();
                             }
                         }
                     }

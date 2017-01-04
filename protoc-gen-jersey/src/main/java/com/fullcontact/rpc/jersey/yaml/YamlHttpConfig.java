@@ -14,6 +14,12 @@ import java.util.Set;
 
 /**
  * Created by kylehansen @Sypticus on 12/28/16.
+ *
+ * Allows HTTPRules to be generated from a .yml file instead of the .proto files.
+ * Any rule defined in a .yml file will override rules in the .proto.
+ * https://cloud.google.com/endpoints/docs/grpc-service-config
+ *
+ * Path to the .yml file should be passed in as part of the optional parameter
  */
 public class YamlHttpConfig {
   public Map<String, List<YamlHttpRule>> http;
@@ -21,13 +27,13 @@ public class YamlHttpConfig {
    return http.get("rules");
   }
 
-  public static Optional<YamlHttpConfig> getFromOptions(Set<String> options){
+  public static Optional<YamlHttpConfig> getFromOptions(Set<String> options) {
     Optional<String> yamlOption = options.stream().filter(option -> option.startsWith("yaml=")).findFirst();
     if(yamlOption.isPresent()) {
       String yamlPath = yamlOption.get().split("=")[1];
         try {
           File yamlFile = new File(yamlPath);
-          if(!yamlFile.exists()){
+          if(!yamlFile.exists()) {
             throw new RuntimeException("YAMLs file does not exist: "+ yamlFile.getAbsolutePath());
           }
           InputStream yamlStream = new FileInputStream(yamlFile);
