@@ -13,13 +13,14 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Created by kylehansen @Sypticus on 12/28/16.
  *
  * Allows HTTPRules to be generated from a .yml file instead of the .proto files.
  * Any rule defined in a .yml file will override rules in the .proto.
  * https://cloud.google.com/endpoints/docs/grpc-service-config
  *
  * Path to the .yml file should be passed in as part of the optional parameter
+ *
+ *  @author Kyle Hansen (sypticus)
  */
 public class YamlHttpConfig {
   public Map<String, List<YamlHttpRule>> http;

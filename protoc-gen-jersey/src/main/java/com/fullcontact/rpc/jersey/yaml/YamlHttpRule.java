@@ -6,9 +6,10 @@ import lombok.Value;
 import java.util.List;
 import java.util.stream.Collectors;
 /**
- * Created by kylehansen @Sypticus on 12/28/16.
  *
  * HTTPRules defined in the .yml will be parsed into a YamlHTTPRule, from which a com.google.api.HttpRule can be generated.
+ *
+ * @author Kyle Hansen (sypticus)
  */
 
 @Value
