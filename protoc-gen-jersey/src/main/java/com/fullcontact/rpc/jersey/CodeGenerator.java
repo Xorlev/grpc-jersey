@@ -2,6 +2,8 @@ package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
 
+import com.fullcontact.rpc.jersey.yaml.YamlHttpConfig;
+import com.fullcontact.rpc.jersey.yaml.YamlHttpRule;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -17,20 +19,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.protobuf.DescriptorProtos;
-import com.google.protobuf.Descriptors;
+import com.google.protobuf.*;
 import com.google.protobuf.compiler.PluginProtos;
 import lombok.Builder;
 import lombok.Value;
 
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +51,9 @@ public class CodeGenerator {
             AnnotationsProto.getDescriptor(),
             HttpRule.getDescriptor().getFile()
         );
+
+        Optional<YamlHttpConfig> yamlConfig = YamlHttpConfig.getFromOptions(options);
+
         for(DescriptorProtos.FileDescriptorProto fdProto : request.getProtoFileList()) {
             // Descriptors are provided in dependency-topological order
             // each time we collect a new FileDescriptor, we add it to a
@@ -85,6 +83,20 @@ public class CodeGenerator {
             for(Descriptors.ServiceDescriptor serviceDescriptor : fd.getServices()) {
                 DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = serviceDescriptor.toProto();
                 for(DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
+                    String fullMethodName = serviceDescriptor.getFullName() +"." + methodProto.getName();
+                    if(yamlConfig.isPresent()) {   //Check to see if the rules are defined in the YAML
+                        for(YamlHttpRule rule : yamlConfig.get().getRules()) {
+                            if(rule.getSelector().equals(fullMethodName) || rule.getSelector().equals("*")) { //TODO:  com.foo.*
+                                DescriptorProtos.MethodOptions yamlOptions = DescriptorProtos.MethodOptions.newBuilder()
+                                    .setExtension(AnnotationsProto.http, rule.buildHttpRule())
+                                    .build();
+                                methodProto = DescriptorProtos.MethodDescriptorProto.newBuilder()
+                                    .mergeFrom(methodProto)
+                                    .setOptions(yamlOptions)
+                                    .build();
+                            }
+                        }
+                    }
                     if(methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
                         // TODO(xorlev): support server streaming
                         if(methodProto.getServerStreaming() || methodProto.getClientStreaming())
@@ -94,7 +106,6 @@ public class CodeGenerator {
                     }
                 }
             }
-
             if(!methodsToGenerate.isEmpty())
                 generateResource(response, lookup, fdProto, methodsToGenerate, isProxy);
         }
