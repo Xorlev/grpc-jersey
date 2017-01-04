@@ -1,0 +1,12 @@
+http:
+  rules:
+  - selector: TestService.TestMethod4
+    get: /yaml_users/{s}/{uint3}/{nt.f1}
+  - selector: TestService.TestMethod5
+    get: /yaml_users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
+  - selector: TestService.TestMethod6
+    post: /yaml_users/
+    body: "*"
+    additionalBindings:
+      - post: /yaml_users_nested
+        body: "nt"

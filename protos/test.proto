@@ -27,6 +27,11 @@ service TestService {
     rpc TestMethod5 (TestRequest) returns (TestResponse) {
         //Defined in Yaml
     }
+
+    rpc TestMethod6 (TestRequest) returns (TestResponse) {
+       //Defined in Yaml
+    }
+
 }
 enum TestEnum {
     FIRST = 0;

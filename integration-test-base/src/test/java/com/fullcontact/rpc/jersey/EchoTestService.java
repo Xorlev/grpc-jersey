@@ -29,4 +29,22 @@ public class EchoTestService extends TestServiceGrpc.TestServiceImplBase {
         responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void testMethod4(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void testMethod5(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void testMethod6(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
+        responseObserver.onCompleted();
+    }
 }

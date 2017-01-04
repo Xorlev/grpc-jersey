@@ -295,7 +295,9 @@ project(":integration-test-serverstub") {
         generateProtoTasks {
             all()*.plugins {
                 grpc {}
-                jersey {}
+                jersey {
+                    option 'yaml=integration-test-base/src/test/proto/http_api_config.yml'
+                }
             }
         }
     }
@@ -345,7 +347,7 @@ project(":integration-test-proxy") {
             all()*.plugins {
                 grpc {}
                 jersey {
-                    option 'proxy'
+                    option 'proxy,yaml=/Users/kylehansen/dev/opensource/grpc-jersey/integration-test-base/src/test/proto/http_api_config.yml'
                 }
             }
         }
