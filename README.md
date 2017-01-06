@@ -76,6 +76,44 @@ message TestResponse {
 
 Would compile into a single Jersey resource with one GET handler and one POST handler.
 
+Rules can also be defined in a .yml file. 
+
+```yaml
+http:
+  rules:
+  - selector: TestService.TestMethod4
+    get: /users/{id}
+  - selector: TestService.TestMethod5
+    get: /yaml_users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
+  - selector: TestService.TestMethod6
+    post: /users/
+    body: "*"
+    additionalBindings:
+      - post: /yaml_users_nested
+        body: "nt"
+```
+Rules defined this way must correspond to methods in the .proto files,
+and will overwrite any http rules defined in the proto. The path to your .yml file should be passed in as an option:
+```groovy
+ generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+                jersey {
+                    option 'proxy,yaml=integration-test-base/src/test/proto/http_api_config.yml'
+                }
+            }
+        }
+```
+or 
+```xml
+    <configuration>
+      <pluginId>grpc-jersey</pluginId>
+      <pluginArtifact>com.fullcontact.grpc-jersey:protoc-gen-jersey:0.1.1:exe:${os.detected.classifier}</pluginArtifact>
+      <pluginParameter>yaml=integration-test-base/src/test/proto/http_api_config.yml</pluginParameter>
+    </configuration>
+
+```
+
 grpc-jersey can operate in two different modes: direct invocation on service `ImplBase` or proxy via a client `Stub`.
 There are advantages and disadvantages to both, however the primary benefit to the client stub proxy is that RPCs pass
 through the same `ServerInterceptor` stack. It's recommended that the client stub passed into the Jersey resource
@@ -98,6 +136,7 @@ Short-term roadmap:
 - [x] Support recursive path expansion for body parameters
 - [x] `additional_bindings` support
 - [x] Support for wildcard `*` and `**` anonymous/named path expansion
+- [x] Support for endpoint definitions in a .yml file.
 - [ ] `response_body` support
 - [ ] Performance tests
 - [ ] Generic/pluggable error handling
