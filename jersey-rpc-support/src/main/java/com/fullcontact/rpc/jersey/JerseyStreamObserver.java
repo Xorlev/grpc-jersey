@@ -16,6 +16,7 @@ import javax.ws.rs.core.Response;
  * @author Michael Rose (xorlev)
  */
 public class JerseyStreamObserver<V extends Message> implements StreamObserver<V> {
+    private static final JsonFormat.Printer PRINTER = JsonFormat.printer().includingDefaultValueFields();
     private final AsyncResponse asyncResponse;
 
     public JerseyStreamObserver(AsyncResponse asyncResponse) {
@@ -26,7 +27,7 @@ public class JerseyStreamObserver<V extends Message> implements StreamObserver<V
     public void onNext(V value) {
         // TODO, content-negotiated handler
         try {
-            asyncResponse.resume(JsonFormat.printer().print(value));
+            asyncResponse.resume(PRINTER.print(value));
         }
         catch(InvalidProtocolBufferException e) {
             onError(e);
