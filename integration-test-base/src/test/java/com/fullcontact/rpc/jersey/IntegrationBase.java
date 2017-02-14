@@ -104,6 +104,30 @@ public abstract class IntegrationBase {
     }
 
     @Test
+    public void testAdvancedGet__defaultEnumInResponse() throws Exception {
+        // /users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
+        String responseJson = resources().getJerseyTest()
+                                       .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "FIRST")
+                                       .queryParam("uint3", "5678") // ensure path param has precedence
+                                       .queryParam("x", "y")
+                                       .request()
+                                       .buildGet()
+                                       .invoke(String.class);
+
+        // We want to ensure this is always set despite the fact that FIRST=0 which is not normally serialized.
+        // Since this is intended to work with other systems (such as frontends or non-Java systems without compiled
+        // protos) we want to ensure the structure remains relatively the same.
+        assertThat(responseJson).contains("\"enu\": \"FIRST\"");
+
+        TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+        JsonFormat.parser().merge(responseJson, responseFromJson);
+        TestResponse response = responseFromJson.build();
+        assertThat(response.getRequest().getEnu()).isEqualTo(TestEnum.FIRST);
+    }
+
+    @Test
     public void testAdvancedGetFromYaml() throws Exception {
         // /yaml_users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         String responseJson = resources().getJerseyTest()
