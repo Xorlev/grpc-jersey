@@ -14,7 +14,7 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 
 @javax.annotation.Generated(
-    value = "by grpc-java proto compiler (version {{grpcJavaVersion}})",
+    value = "by grpc-jersey compiler (version {{grpcJerseyVersion}})",
     comments = "Source: {{sourceProtoFile}}")
 @Produces({"application/json; charset=UTF-8"})
 @Consumes({"application/json; charset=UTF-8"})

@@ -315,6 +315,10 @@ public class CodeGenerator {
         boolean parseHeaders;
         String fileName;
 
+        String grpcJerseyVersion() {
+            return Build.version();
+        }
+
         String sourceProtoFile() {
             return serviceDescriptor.getFile().getName();
         }
