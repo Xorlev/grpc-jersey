@@ -7,7 +7,6 @@ import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 
@@ -25,7 +24,6 @@ public class ProxyIntegrationApp extends Application<Configuration> {
     public void run(Configuration configuration, Environment environment) throws Exception {
         Server server = InProcessServerBuilder.forName("TestService")
                                               .addService(new EchoTestService())
-                                              .directExecutor()
                                               .build();
         server.start();
 

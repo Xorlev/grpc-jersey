@@ -15,16 +15,20 @@ import javax.ws.rs.core.Response;
  *
  * @author Michael Rose (xorlev)
  */
-public class JerseyStreamObserver<V extends Message> implements StreamObserver<V> {
+public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V> {
     private static final JsonFormat.Printer PRINTER = JsonFormat.printer().includingDefaultValueFields();
     private final AsyncResponse asyncResponse;
 
-    public JerseyStreamObserver(AsyncResponse asyncResponse) {
+    private volatile boolean closed = false;
+
+    public JerseyUnaryObserver(AsyncResponse asyncResponse) {
         this.asyncResponse = asyncResponse;
     }
 
     @Override
     public void onNext(V value) {
+        if(closed)
+            throw new IllegalStateException("StreamingObserver has already been closed");
         // TODO, content-negotiated handler
         try {
             asyncResponse.resume(PRINTER.print(value));
@@ -36,6 +40,7 @@ public class JerseyStreamObserver<V extends Message> implements StreamObserver<V
 
     @Override
     public void onError(Throwable t) {
+        closed = true;
         if(t instanceof InvalidProtocolBufferException) {
             asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).entity(t.getMessage()).build());
         } else {
@@ -45,6 +50,6 @@ public class JerseyStreamObserver<V extends Message> implements StreamObserver<V
 
     @Override
     public void onCompleted() {
-
+        closed = true;
     }
 }

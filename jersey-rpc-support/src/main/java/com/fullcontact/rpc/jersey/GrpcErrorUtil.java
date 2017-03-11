@@ -22,8 +22,8 @@ import javax.ws.rs.core.Response;
  * @author Michael Rose (xorlev)
  */
 public class GrpcErrorUtil {
-    private static final Metadata.Key<DebugInfo> DEBUG_INFO_KEY = ProtoUtils.keyForProto(DebugInfo.getDefaultInstance());
-    private static final Metadata.Key<RetryInfo> RETRY_INFO_KEY = ProtoUtils.keyForProto(RetryInfo.getDefaultInstance());
+    public static final Metadata.Key<DebugInfo> DEBUG_INFO_KEY = ProtoUtils.keyForProto(DebugInfo.getDefaultInstance());
+    public static final Metadata.Key<RetryInfo> RETRY_INFO_KEY = ProtoUtils.keyForProto(RetryInfo.getDefaultInstance());
 
     public static int grpcToHttpStatus(io.grpc.Status status) {
         switch(status.getCode()) {
@@ -79,11 +79,14 @@ public class GrpcErrorUtil {
 
         com.google.rpc.Status.Builder payload = com.google.rpc.Status.newBuilder();
         payload.setCode(status.getCode().value());
-        payload.setMessage(status.getCode().name());
 
-        if(status.getDescription() != null) {
-            payload.setMessage(payload.getMessage() + ": " + Strings.nullToEmpty(status.getDescription()));
+        StringBuilder errorMessage = new StringBuilder("HTTP " + statusCode + " (gRPC: "+status.getCode().name()+")");
+
+        if(!Strings.isNullOrEmpty(status.getDescription())) {
+            errorMessage.append(": ").append(Strings.nullToEmpty(status.getDescription()));
         }
+
+        payload.setMessage(errorMessage.toString());
 
         if(trailer != null) {
             if(trailer.containsKey(RETRY_INFO_KEY)) {

@@ -15,6 +15,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -99,8 +100,8 @@ public class CodeGenerator {
                     }
                     if(methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
                         // TODO(xorlev): support server streaming
-                        if(methodProto.getServerStreaming() || methodProto.getClientStreaming())
-                            throw new IllegalArgumentException("http annotations cannot be used with streaming methods");
+                        if(methodProto.getClientStreaming())
+                            throw new IllegalArgumentException("grpc-jersey does not support client streaming");
 
                         methodsToGenerate.add(new ServiceAndMethod(serviceDescriptor, methodProto));
                     }
@@ -270,7 +271,9 @@ public class CodeGenerator {
                 bodyFieldPath,
                 ProtobufDescriptorJavaUtil.genClassName(inputDescriptor),
                 ProtobufDescriptorJavaUtil.genClassName(outputDescriptor),
-                methodIndex++
+                methodIndex++,
+                sam.getMethodDescriptor().hasClientStreaming(),
+                sam.getMethodDescriptor().hasServerStreaming()
             ));
         }
 
@@ -322,6 +325,14 @@ public class CodeGenerator {
         String sourceProtoFile() {
             return serviceDescriptor.getFile().getName();
         }
+
+        List<ResourceMethodToGenerate> unaryMethods() {
+            return FluentIterable.from(methods).filter(m -> !m.isStreaming()).toList();
+        }
+
+        List<ResourceMethodToGenerate> streamMethods() {
+            return FluentIterable.from(methods).filter(ResourceMethodToGenerate::isStreaming).toList();
+        }
     }
 
     @Value
@@ -354,9 +365,15 @@ public class CodeGenerator {
         String requestType;
         String responseType;
         int methodIndex;
+        boolean isClientStreaming;
+        boolean isServerStreaming;
 
         String methodNameLower() {
             return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, methodName);
+        }
+
+        boolean isStreaming() {
+            return isServerStreaming || isClientStreaming;
         }
     }
 
