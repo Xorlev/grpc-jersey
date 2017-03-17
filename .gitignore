@@ -12,3 +12,4 @@ build/
 .settings/
 .gradletasknamecache
 classes/
+protoc-gen-jersey/src/main/resources/build.properties
