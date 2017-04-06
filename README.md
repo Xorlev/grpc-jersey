@@ -14,7 +14,7 @@ but an example using Maven can be found [in examples](https://github.com/fullcon
 
 ```groovy
 ext {
-    protobufVersion = "3.3.0"
+    protobufVersion = "3.2.0"
     grpcVersion = "1.2.0"
     grpcJerseyVersion = "0.1.3"
 }
