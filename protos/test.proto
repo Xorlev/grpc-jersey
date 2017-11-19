@@ -55,6 +55,8 @@ message TestRequest {
     double d = 9;
     TestEnum enu = 10;
     NestedType nt = 11;
+    repeated uint32 rep = 12;
+    repeated string rep_str = 13;
 }
 message TestResponse {
     TestRequest request = 1;

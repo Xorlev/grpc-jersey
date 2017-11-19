@@ -4,7 +4,7 @@ import com.fullcontact.rpc.NestedType;
 import com.fullcontact.rpc.TestEnum;
 import com.fullcontact.rpc.TestRequest;
 import com.fullcontact.rpc.TestResponse;
-
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.util.JsonFormat;
 import io.dropwizard.testing.junit.ResourceTestRule;
 import org.junit.Test;
@@ -40,6 +40,86 @@ public abstract class IntegrationBase {
         assertThat(response.getRequest().getS()).isEqualTo("string1");
         assertThat(response.getRequest().getUint3()).isEqualTo(1234);
         assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+    }
+
+    @Test
+    public void testBasicGetWith1RepeatedIntParam() throws Exception {
+        // /users/{s}/{uint3}/{nt.f1}?rep=1&rep=2&rep=3
+        String responseJson = resources().getJerseyTest()
+                                                 .target("/users/string1/1234/abcd")
+                                                 .queryParam("rep", 1)
+                                                 .request()
+                                                 .buildGet()
+                                                 .invoke(String.class);
+
+        TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+        JsonFormat.parser().merge(responseJson, responseFromJson);
+        TestResponse response = responseFromJson.build();
+
+        assertThat(response.getRequest().getS()).isEqualTo("string1");
+        assertThat(response.getRequest().getUint3()).isEqualTo(1234);
+        assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+        assertThat(response.getRequest().getRepList()).isEqualTo(ImmutableList.of(1));
+    }
+
+    @Test
+    public void testBasicGetWithRepeatedIntParam() throws Exception {
+        // /users/{s}/{uint3}/{nt.f1}?rep=1&rep=2&rep=3
+        String responseJson = resources().getJerseyTest()
+                                                 .target("/users/string1/1234/abcd")
+                                                 .queryParam("rep", 1, 2, 3)
+                                                 .request()
+                                                 .buildGet()
+                                                 .invoke(String.class);
+
+        TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+        JsonFormat.parser().merge(responseJson, responseFromJson);
+        TestResponse response = responseFromJson.build();
+
+        assertThat(response.getRequest().getS()).isEqualTo("string1");
+        assertThat(response.getRequest().getUint3()).isEqualTo(1234);
+        assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+        assertThat(response.getRequest().getRepList()).isEqualTo(ImmutableList.of(1, 2, 3));
+    }
+
+    @Test
+    public void testBasicGetWithRepeatedStrParam() throws Exception {
+        // /users/{s}/{uint3}/{nt.f1}?repStr=a&repStr=b&repStr=c
+        String responseJson = resources().getJerseyTest()
+                                                 .target("/users/string1/1234/abcd")
+                                                 .queryParam("rep_str", "a", "b", "c")
+                                                 .request()
+                                                 .buildGet()
+                                                 .invoke(String.class);
+
+        TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+        JsonFormat.parser().merge(responseJson, responseFromJson);
+        TestResponse response = responseFromJson.build();
+
+        assertThat(response.getRequest().getS()).isEqualTo("string1");
+        assertThat(response.getRequest().getUint3()).isEqualTo(1234);
+        assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+        assertThat(response.getRequest().getRepStrList()).isEqualTo(ImmutableList.of("a", "b", "c"));
+    }
+
+    @Test
+    public void testBasicGetWithRepeatedEmptyStrParam() throws Exception {
+        // /users/{s}/{uint3}/{nt.f1}?repStr=a&repStr=&repStr=b&repStr=
+        String responseJson = resources().getJerseyTest()
+                                                 .target("/users/string1/1234/abcd")
+                                                 .queryParam("rep_str", "a", "", "b", "")
+                                                 .request()
+                                                 .buildGet()
+                                                 .invoke(String.class);
+
+        TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+        JsonFormat.parser().merge(responseJson, responseFromJson);
+        TestResponse response = responseFromJson.build();
+
+        assertThat(response.getRequest().getS()).isEqualTo("string1");
+        assertThat(response.getRequest().getUint3()).isEqualTo(1234);
+        assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+        assertThat(response.getRequest().getRepStrList()).isEqualTo(ImmutableList.of("a", "", "b", ""));
     }
 
     @Test
@@ -206,6 +286,4 @@ public abstract class IntegrationBase {
 
         assertThat(response.getRequest().getNt()).isEqualTo(request);
     }
-
-
 }
