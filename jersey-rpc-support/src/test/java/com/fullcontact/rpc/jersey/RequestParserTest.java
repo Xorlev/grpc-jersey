@@ -5,6 +5,7 @@ import com.fullcontact.rpc.NestedType;
 import com.fullcontact.rpc.TestEnum;
 import com.fullcontact.rpc.TestRequest;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.Metadata;
@@ -36,7 +37,11 @@ public class RequestParserTest {
             .put("int6", "9000000000000000000")
             .put("f", "123.456")
             .put("d", "123.456")
-            .put("enu", "SECOND");
+            .put("enu", "SECOND")
+            .put("rep", "1")
+            .put("rep", "2")
+            .put("rep_str", "a")
+            .put("rep_str", "");
 
         RequestParser.parseQueryParams(uriInfoMap, request);
 
@@ -53,6 +58,8 @@ public class RequestParserTest {
         assertThat(r.getF()).isEqualTo(123.456f);
         assertThat(r.getD()).isEqualTo(123.456d);
         assertThat(r.getEnu()).isEqualTo(TestEnum.SECOND);
+        assertThat(r.getRepList()).isEqualTo(ImmutableList.of(1, 2));
+        assertThat(r.getRepStrList()).isEqualTo(ImmutableList.of("a", ""));
     }
 
     @Test
@@ -75,6 +82,22 @@ public class RequestParserTest {
         RequestParser.setFieldSafely(request, "nt.f1", "abc");
 
         assertThat(request.build().getNt().getF1()).isEqualTo("abc");
+    }
+
+    @Test
+    public void testSetRepeatedIntField() throws Exception {
+        TestRequest.Builder request = TestRequest.newBuilder();
+        RequestParser.setFieldSafely(request, "rep", ImmutableList.of("1", "2", "3"));
+
+        assertThat(request.build().getRepList()).isEqualTo(ImmutableList.of(1, 2, 3));
+    }
+
+    @Test
+    public void testSetRepeatedStringField() throws Exception {
+        TestRequest.Builder request = TestRequest.newBuilder();
+        RequestParser.setFieldSafely(request, "rep_str", ImmutableList.of("a", ""));
+
+        assertThat(request.build().getRepStrList()).isEqualTo(ImmutableList.of("a", ""));
     }
 
     @Test

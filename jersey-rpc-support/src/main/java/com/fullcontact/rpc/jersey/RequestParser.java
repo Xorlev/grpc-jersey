@@ -7,6 +7,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.UnsafeByteOperations;
@@ -17,8 +18,8 @@ import io.grpc.stub.MetadataUtils;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -46,7 +47,7 @@ public class RequestParser {
                 Descriptors.FieldDescriptor field = Iterables.getLast(descriptors);
 
                 if(!pathDescriptors.contains(field.toProto())) {
-                    setFieldSafely(builder, queryParam, uriInfo.getQueryParameters().getFirst(queryParam));
+                    setFieldSafely(builder, queryParam, uriInfo.getQueryParameters().get(queryParam));
                 }
             }
         }
@@ -67,6 +68,11 @@ public class RequestParser {
 
     public static void setFieldSafely(Message.Builder builder, String path, String value)
             throws InvalidProtocolBufferException {
+        setFieldSafely(builder, path, ImmutableList.of(value));
+    }
+    
+    public static void setFieldSafely(Message.Builder builder, String path, List<String> value)
+            throws InvalidProtocolBufferException {
         Descriptors.Descriptor descriptor = builder.getDescriptorForType();
 
         ImmutableList<Descriptors.FieldDescriptor> fieldDescriptors =
@@ -86,60 +92,73 @@ public class RequestParser {
         setFieldSafely(fieldBuilder, fieldDescriptors.get(fieldDescriptors.size()-1), value);
     }
 
-    public static void setFieldSafely(Message.Builder builder, Descriptors.FieldDescriptor fd, String value)
+    public static void setFieldSafely(Message.Builder builder, Descriptors.FieldDescriptor fd, List<String> value)
     throws InvalidProtocolBufferException {
+        Object valueToSet = getValueFor(fd, value);
+        builder.setField(fd, valueToSet);
+    }
+
+    private static Object getValueFor(FieldDescriptor fd, List<String> value) throws InvalidProtocolBufferException {
+        Object result;
+        if (!fd.isRepeated()) {
+            if (value.size() != 1) {
+                throw new InvalidProtocolBufferException("Unable to map " + fd + " to value: " + value);
+            }
+            result = getUnaryValueFor(fd, value.get(0));
+        } else {
+            List<Object> listResult = new ArrayList<>(value.size());
+            for (String valueStr : value) {
+                listResult.add(getUnaryValueFor(fd, valueStr));
+            }
+            result = listResult;
+        }
+        return result;
+    }
+    
+    private static Object getUnaryValueFor(Descriptors.FieldDescriptor fd, String value) throws InvalidProtocolBufferException {
         try {
             switch(fd.getType()) {
                 case DOUBLE:
-                    builder.setField(fd, Double.parseDouble(value));
-                    break;
+                    return Double.parseDouble(value);
                 case FLOAT:
-                    builder.setField(fd, Float.parseFloat(value));
-                    break;
+                    return Float.parseFloat(value);
                 case BOOL:
-                    builder.setField(fd, Boolean.parseBoolean(value));
-                    break;
+                    return Boolean.parseBoolean(value);
                 case STRING:
-                    builder.setField(fd, value);
-                    break;
-                case GROUP:
-                    // unsupported
-                    break;
-                case MESSAGE:
-                    // unsupported
-                    break;
+                    return value;
                 case BYTES:
-                    builder.setField(fd, UnsafeByteOperations.unsafeWrap(value.getBytes()));
-                    break;
+                    return UnsafeByteOperations.unsafeWrap(value.getBytes());
                 case ENUM:
                     Descriptors.EnumValueDescriptor enumValueDescriptor =
                         fd.getEnumType().findValueByName(value.toUpperCase());
-                    builder.setField(fd, enumValueDescriptor); // TODO eh?
-                    break;
+                    return enumValueDescriptor; // TODO eh?
                 case INT32:
-                    builder.setField(fd, Integer.parseInt(value));
-                    break;
+                    return Integer.parseInt(value);
                 case UINT32:
                 case FIXED32:
                 case SFIXED32:
                 case SINT32:
-                    builder.setField(fd, Integer.parseUnsignedInt(value));
-                    break;
+                    return Integer.parseUnsignedInt(value);
                 case INT64:
-                    builder.setField(fd, Long.parseLong(value));
-                    break;
+                    return Long.parseLong(value);
                 case UINT64:
                 case FIXED64:
                 case SFIXED64:
                 case SINT64:
-                    builder.setField(fd, Long.parseUnsignedLong(value));
+                    return Long.parseUnsignedLong(value);
                     // all are unsigned 64-bit ints
+                case GROUP:
+                    // unsupported
+                case MESSAGE:
+                    // unsupported
+                default:
+                    throw new InvalidProtocolBufferException("Unable to map " + fd + " to value: " + value);
             }
         } catch(NumberFormatException e) {
             throw new InvalidProtocolBufferException("Unable to map " + fd + " to value: " + value);
         }
     }
-
+    
     public static <V extends Message> void handleBody(
             String fieldPath,
             V.Builder builder,
