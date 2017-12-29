@@ -1,6 +1,7 @@
 *~
 bin/
 build/
+out/
 .classpath
 .DS_Store
 .gradle
