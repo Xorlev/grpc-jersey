@@ -64,6 +64,9 @@ service TestService {
             body: "*";
         };
     }
+    rpc StreamMethod1 (TestRequest) returns (stream TestResponse) {
+            option (google.api.http).get = "/stream/{s}";
+    }
 }
 message TestRequest {
     string id = 1;
