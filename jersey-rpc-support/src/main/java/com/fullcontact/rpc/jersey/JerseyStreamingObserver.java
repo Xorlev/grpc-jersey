@@ -62,7 +62,12 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
             output.close();
         }
         catch(IOException e) {
-            // ignored
+            // Something really broke, try closing the connection.
+            try {
+                output.close();
+            } catch (IOException e1) {
+                // Ignored if we already have.
+            }
         }
     }
 

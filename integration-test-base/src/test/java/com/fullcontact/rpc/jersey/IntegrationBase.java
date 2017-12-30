@@ -9,14 +9,11 @@ import com.google.protobuf.util.JsonFormat;
 import com.google.rpc.Status;
 import io.dropwizard.testing.junit.ResourceTestRule;
 import org.assertj.core.util.Strings;
-import org.glassfish.jersey.client.ClientResponse;
-import org.glassfish.jersey.message.internal.EntityInputStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import javax.ws.rs.client.Entity;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -342,7 +339,51 @@ public abstract class IntegrationBase {
     }
 
     @Test
-    public void testStreamGetError() throws Exception {
+    public void testStreamGetStatusError() throws Exception {
+        InputStream response = resources().getJerseyTest()
+                                       .target("/stream/grpc_data_loss")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "SECOND")
+                                       .queryParam("int3", "10")
+                                       .queryParam("x", "y")
+                                       .queryParam("nt.f1", "abcd")
+                                       .request()
+                                       .buildGet()
+                                       .invoke(InputStream.class);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+
+        // int3 controls "successful" messages. Next request will throw.
+        for (int i = 0; i < 10; i++) {
+            String json = reader.readLine();
+
+            if(Strings.isNullOrEmpty(json))
+                break;
+
+            TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+            JsonFormat.parser().merge(json, responseFromJson);
+            TestResponse r = responseFromJson.build();
+
+            assertThat(r.getRequest().getS()).isEqualTo("grpc_data_loss");
+        }
+
+        String json = reader.readLine();
+        Status.Builder statusBuilder = Status.newBuilder();
+        JsonFormat.parser().merge(json, statusBuilder);
+
+        // As expected, Status loses "cause" and "details" after transmission.
+        // Normally, details would be set, but JsonFormat doesn't support serializing Any.
+        Status expected = Status
+                .newBuilder()
+                .setCode(15)
+                .setMessage("HTTP 500 (gRPC: DATA_LOSS): Fail-fast: Grue found in write-path.\ntest")
+                .build();
+
+        assertThat(statusBuilder.build()).isEqualTo(expected);
+    }
+
+    @Test
+    public void testStreamGetUnhandledError() throws Exception {
         InputStream response = resources().getJerseyTest()
                                        .target("/stream/explode")
                                        .queryParam("d", 1234.5678)

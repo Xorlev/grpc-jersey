@@ -2,6 +2,7 @@ package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.jersey.util.JsonUtil;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.rpc.Status;
 
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Response;
@@ -27,7 +28,7 @@ public interface GrpcJerseyErrorHandler {
      * @param t throwable raised.
      * @return Literal string, if you want JSON-encoded data use the {@link JsonUtil#PRINTER_WITHOUT_WHITESPACE} to
      *         retain server-sent events compatibility. Return {@link Optional#empty()} to silently abort.
-     * @throws InvalidProtocolBufferException
+     * @throws IOException usually if serialization of errors break.
      */
     Optional<String> handleStreamingError(Throwable t) throws IOException;
 
@@ -44,8 +45,14 @@ public interface GrpcJerseyErrorHandler {
 
         @Override
         public Optional<String> handleStreamingError(Throwable t) throws InvalidProtocolBufferException {
-            return Optional.of(
-                    JsonUtil.PRINTER_WITHOUT_WHITESPACE.print(GrpcErrorUtil.throwableToStatus(t).getPayload()));
+            Status grpcError = GrpcErrorUtil.throwableToStatus(t).getPayload();
+
+            // JsonFormat doesn't support serializing Any.
+            if (!grpcError.getDetailsList().isEmpty()) {
+                grpcError = grpcError.toBuilder().clearDetails().build();
+            }
+
+            return Optional.of(JsonUtil.PRINTER_WITHOUT_WHITESPACE.print(grpcError));
         }
     }
 }
