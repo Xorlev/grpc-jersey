@@ -295,6 +295,7 @@ public abstract class IntegrationBase {
         assertThat(response.getRequest().getNt()).isEqualTo(request);
     }
 
+    @Test
     public void testStreamGet() throws Exception {
         InputStream response = resources().getJerseyTest()
                                        .target("/stream/hello")

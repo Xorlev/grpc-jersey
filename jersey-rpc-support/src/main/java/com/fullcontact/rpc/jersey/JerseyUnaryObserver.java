@@ -1,22 +1,17 @@
 package com.fullcontact.rpc.jersey;
 
+import com.fullcontact.rpc.jersey.util.JsonUtil;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
 import io.grpc.stub.StreamObserver;
 
 import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.core.Response;
 
 /**
- * gRPC StreamObserver which publishes to a Jersey AsyncResponse
- *
- * Currently does not handle multiple (streaming) messages
- *
- * @author Michael Rose (xorlev)
+ * gRPC StreamObserver which publishes to a Jersey AsyncResponse. Used for unary (singular request/response)
+ * semantics.
  */
 public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V> {
-    private static final JsonFormat.Printer PRINTER = JsonFormat.printer().includingDefaultValueFields();
     private final AsyncResponse asyncResponse;
 
     private volatile boolean closed = false;
@@ -28,10 +23,9 @@ public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V>
     @Override
     public void onNext(V value) {
         if(closed)
-            throw new IllegalStateException("StreamingObserver has already been closed");
-        // TODO, content-negotiated handler
+            throw new IllegalStateException("JerseyUnaryObserver has already been closed");
         try {
-            asyncResponse.resume(PRINTER.print(value));
+            asyncResponse.resume(JsonUtil.PRINTER.print(value));
         }
         catch(InvalidProtocolBufferException e) {
             onError(e);
@@ -41,11 +35,7 @@ public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V>
     @Override
     public void onError(Throwable t) {
         closed = true;
-        if(t instanceof InvalidProtocolBufferException) {
-            asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).entity(t.getMessage()).build());
-        } else {
-            asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(t));
-        }
+        ErrorHandler.handleUnaryError(t, asyncResponse);
     }
 
     @Override
