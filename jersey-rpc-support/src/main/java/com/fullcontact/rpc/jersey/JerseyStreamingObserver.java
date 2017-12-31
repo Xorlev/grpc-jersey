@@ -1,6 +1,5 @@
 package com.fullcontact.rpc.jersey;
 
-import com.fullcontact.rpc.jersey.util.JsonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
@@ -42,7 +41,7 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
             throw new IllegalStateException("JerseyStreamingObserver has already been closed");
 
         try {
-            write(JsonUtil.PRINTER_WITHOUT_WHITESPACE.print(value));
+            write(JsonHandler.streamPrinter().print(value));
         }
         catch(IOException e) {
             onError(e);

@@ -1,6 +1,5 @@
 package com.fullcontact.rpc.jersey;
 
-import com.fullcontact.rpc.jersey.util.JsonUtil;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 
@@ -26,7 +25,7 @@ public interface GrpcJerseyErrorHandler {
      * there isn't a real way to signal well-formed errors except via another streaming payload.
      *
      * @param t throwable raised.
-     * @return Literal string, if you want JSON-encoded data use the {@link JsonUtil#PRINTER_WITHOUT_WHITESPACE} to
+     * @return Literal string, if you want JSON-encoded data use the {@link JsonHandler#streamPrinter()} to
      *         retain server-sent events compatibility. Return {@link Optional#empty()} to silently abort.
      * @throws IOException usually if serialization of errors break.
      */
@@ -52,7 +51,7 @@ public interface GrpcJerseyErrorHandler {
                 grpcError = grpcError.toBuilder().clearDetails().build();
             }
 
-            return Optional.of(JsonUtil.PRINTER_WITHOUT_WHITESPACE.print(grpcError));
+            return Optional.of(JsonHandler.streamPrinter().print(grpcError));
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.fullcontact.rpc.jersey;
 
-import com.fullcontact.rpc.jersey.util.JsonUtil;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
@@ -25,7 +24,7 @@ public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V>
         if(closed)
             throw new IllegalStateException("JerseyUnaryObserver has already been closed");
         try {
-            asyncResponse.resume(JsonUtil.PRINTER.print(value));
+            asyncResponse.resume(JsonHandler.unaryPrinter().print(value));
         }
         catch(InvalidProtocolBufferException e) {
             onError(e);
