@@ -385,6 +385,16 @@ instances.
 
 ## Releases
 
+0.2.0
+ - Server-to-client RPC streaming support. [#14](https://github.com/Xorlev/grpc-jersey/pull/14)
+ - `ALREADY_EXISTS` gRPC error code now maps to `409 Conflict`.
+ - Error handling is now pluggable. See [Overriding Error Handling](#overriding-error-handling).
+ - JSON printer/parser is now pluggable. See [Overrding JSON formatting](#overriding-json-formatting).
+ - 'Proxy' mode is now default code generation mode. [#19](https://github.com/Xorlev/grpc-jersey/pull/19)
+ - Updated to protobuf 3.5, gRPC 1.8.
+ - More documentation! Added [dual-stack server](#operation-modes) example.
+ - More integration testing around error handling.
+
 0.1.4
  - Changed to 'com.xorlev' artifact group, released on Sonatype/Central.
  - Query parameters now support repeated types. @gfecher ([#15](https://github.com/Xorlev/grpc-jersey/pull/15))
