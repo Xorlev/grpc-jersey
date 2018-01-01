@@ -120,7 +120,65 @@ through the same `ServerInterceptor` stack. It's recommended that the client stu
 uses a `InProcessTransport` if living in the same JVM as the gRPC server. A normal grpc-netty channel can be used
 for a more traditional reverse proxy.
 
-You can find an example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
+If you plan to run "dual stack", that is, services serving traffic over both HTTP and RPC, you can configure your
+service to share resources and the same interceptor stack and avoid TCP/serialization overhead using a mixture
+of in-process transport. The example below uses Dropwizard, but should be adaptable to any Jersey glue you like.
+
+```java
+// Shared executor for both services.
+Executor executor = Executors.newFixedThreadPool(config.rpcThreads,
+        new ThreadFactoryBuilder().setNameFormat("grpc-executor-%d").build());
+
+// Service stack. This is where you define your interceptors.
+ServerServiceDefinition serviceStack = ServerInterceptors.intercept(
+        new EchoTestService(),
+        new GrpcLoggingInterceptor(),
+        new MyAuthenticationInterceptor() // your interceptor stack.
+);
+
+// External RPC service.
+Server externalService = NettyServerBuilder
+        .forPort(config.rpcPort)
+        .executor(executor)
+        .addService(serviceStack)
+        .build()
+        .start();
+
+// In-memory RPC service for grpc-jersey. This avoids serialization/TCP overheads while still sharing the
+// same executor and service stack.
+Server internalService = InProcessServerBuilder
+        .forName("TestService")
+        .executor(executor)
+        .addService(serviceStack)
+        .build()
+        .start();
+
+// In-process stub used by the generated Jersey resource.
+TestServiceGrpc.TestServiceStub stub =
+        TestServiceGrpc.newStub(InProcessChannelBuilder
+                .forName("TestService")
+                .usePlaintext(true)
+                .directExecutor()
+                .build());
+
+// Dropwizard-specific: register shutdown handlers and the Jersey resource.
+
+environment.lifecycle().manage(new Managed() {
+    @Override
+    public void start() throws Exception {
+    }
+
+    @Override
+    public void stop() throws Exception {
+        externalService.shutdown();
+        internalService.shutdown();
+    }
+});
+
+environment.jersey().register(new TestServiceGrpcJerseyResource(stub));
+```
+
+You can find a complete example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
 
 ## Releases
 
