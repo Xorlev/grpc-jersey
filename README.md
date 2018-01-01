@@ -98,14 +98,14 @@ http:
 Rules defined this way must correspond to methods in the .proto files,
 and will overwrite any http rules defined in the proto. The path to your .yml file should be passed in as an option:
 ```groovy
- generateProtoTasks {
-            all()*.plugins {
-                grpc {}
-                jersey {
-                    option 'proxy,yaml=integration-test-base/src/test/proto/http_api_config.yml'
-                }
-            }
+generateProtoTasks {
+    all()*.plugins {
+        grpc {}
+        jersey {
+            option 'yaml=integration-test-base/src/test/proto/http_api_config.yml'
         }
+    }
+}
 ```
 or 
 ```xml
@@ -117,11 +117,28 @@ or
 
 ```
 
+## Operation modes
+
 grpc-jersey can operate in two different modes: direct invocation on service `ImplBase` or proxy via a client `Stub`.
 There are advantages and disadvantages to both, however the primary benefit to the client stub proxy is that RPCs pass
 through the same `ServerInterceptor` stack. It's recommended that the client stub passed into the Jersey resource
 uses a `InProcessTransport` if living in the same JVM as the gRPC server. A normal grpc-netty channel can be used
 for a more traditional reverse proxy.
+
+The proxy stub mode is the default as of 0.2.0.
+
+You can toggle the "direct invocation" mode by passing an option to the grpc-jersey compiler:
+
+```groovy
+generateProtoTasks {
+    all()*.plugins {
+        grpc {}
+        jersey {
+            option 'direct'
+        }
+    }
+}
+```
 
 If you plan to run "dual stack", that is, services serving traffic over both HTTP and RPC, you can configure your
 service to share resources and the same interceptor stack and avoid TCP/serialization overhead using a mixture
