@@ -200,6 +200,53 @@ environment.jersey().register(new TestServiceGrpcJerseyResource(stub));
 
 You can find a complete example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
 
+## Streaming RPCs
+
+At this time, only streaming from server to client is supported. Client to server streaming will also be supported
+in the future, allowing for limited bi-directional streaming. Due to the limitations of the HTTP/1.1 protocol, server
+streaming will only begin once the client stream terminates.
+
+grpc-jersey streams messages as newline-delimited JSON. As an example:
+
+```
+> GET /stream/hello?int3=2 HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.51.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Vary: Accept
+< Content-Type: application/json;charset=utf-8
+< Vary: Accept-Encoding
+< Transfer-Encoding: chunked
+<
+{"request":{"s":"hello","uint3":0,"uint6":"0","int3":2,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+{"request":{"s":"hello","uint3":0,"uint6":"0","int3":2,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+```
+
+Each message is encoded into a single line.
+
+By default, the handler returns `application/json;charset=utf-8`, however if provided an `Accept` header of
+`text/event-stream`, grpc-jersey will provide data in a format usable by
+[`EventSource`](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) (Server-Sent Events):
+
+```
+> GET /stream/hello?int3=2 HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.51.0
+> Accept: text/event-stream
+>
+< HTTP/1.1 200 OK
+< Vary: Accept
+< Content-Type: text/event-stream;charset=utf-8
+< Vary: Accept-Encoding
+< Transfer-Encoding: chunked
+<
+data: {"request":{"s":"hello","uint3":0,"uint6":"0","int3":2,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+
+data: {"request":{"s":"hello","uint3":0,"uint6":"0","int3":2,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+```
+
 ## Error handling
 
 grpc-jersey will translate errors raised inside your RPC handler. However, there is some nuance with regards to using
