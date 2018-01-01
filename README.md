@@ -355,7 +355,7 @@ This project is in use and under active development.
 
 Short-term roadmap:
 
-- [ ] Documentation
+- [x] Documentation
 - [x] Support recursive path expansion for path parameters
 - [x] Support recursive path expansion for query parameters
 - [x] Support recursive path expansion for body parameters
@@ -364,11 +364,15 @@ Short-term roadmap:
 - [x] Support for endpoint definitions in a .yml file.
 - [ ] `response_body` support
 - [ ] Performance tests
-- [ ] Generic/pluggable error handling
-- [ ] Supporting streaming RPCs
- - [X] Server streaming
- - [ ] Client streaming
- - [ ] BiDi streaming (true bidi streaming is impossible without websockets)
+- [x] Generic/pluggable error handling
+- [x] Supporting streaming RPCs
+    - [X] Server streaming
+    - [ ] Client streaming
+    - [ ] BiDi streaming (true bidi streaming is impossible without websockets)
+- [ ] Direct control of HTTP headers
+
+Long-term roadmap:
+- Potentially replace Jersey resources with servlet filter. This would make streaming easier.
 
 ## Build Process
 
