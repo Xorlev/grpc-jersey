@@ -38,11 +38,11 @@ configure(subprojects.findAll{it.getPlugins().hasPlugin(MavenPlugin)}) {
       // Closure to configure all the POM with extra info, common to all projects
       pom.project {
         name "${project.name}"
-        description "${project.name} developed by FullContact"
+        description "${project.name} developed by Michael Rose"
         developers {
           developer {
-            id 'fullcontactgithub'
-            name 'FullContact Open Source Development'
+            id 'xorlevgithub'
+            name 'Michael Rose'
           }
         }
         licenses {
@@ -52,15 +52,15 @@ configure(subprojects.findAll{it.getPlugins().hasPlugin(MavenPlugin)}) {
             distribution 'repo'
           }
         }
-        url "https://github.com/fullcontact/${rootProject.name}"
+        url "https://github.com/Xorlev/${rootProject.name}"
         scm {
-          connection "scm:git:git@github.com:fullcontact/${rootProject.name}.git"
-          url "scm:git:git@github.com:fullcontact/${rootProject.name}.git"
-          developerConnection "scm:git:git@github.com:fullcontact/${rootProject.name}.git"
+          connection "scm:git:git@github.com:Xorlev/${rootProject.name}.git"
+          url "scm:git:git@github.com:Xorlev/${rootProject.name}.git"
+          developerConnection "scm:git:git@github.com:Xorlev/${rootProject.name}.git"
         }
         issueManagement {
           system 'github'
-          url "https://github.com/fullcontact/${rootProject.name}/issues"
+          url "https://github.com/Xorlev/${rootProject.name}/issues"
         }
       }
     }

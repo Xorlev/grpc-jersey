@@ -1,7 +1,7 @@
-# grpc-jersey [![Build Status](https://travis-ci.org/Xorlev/grpc-jersey.svg?branch=master)](https://travis-ci.org/Xorlev/grpc-jersey) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fullcontact.grpc-jersey/protoc-gen-jersey/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fullcontact.grpc-jersey/protoc-gen-jersey)
-protoc plugin for compiling [gRPC](https://www.grpc.io/) service endpoints as Jersey/REST endpoints. Uses the
+# grpc-jersey [![Build Status](https://travis-ci.org/Xorlev/grpc-jersey.svg?branch=master)](https://travis-ci.org/Xorlev/grpc-jersey) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.xorlev.grpc-jersey/protoc-gen-jersey/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.xorlev.grpc-jersey/protoc-gen-jersey)
+protoc plugin for compiling [gRPC](https://www.grpc.io/) RPC services as Jersey/REST endpoints. Uses the
 [HttpRule](https://cloud.google.com/service-management/reference/rpc/google.api#http) annotations also
-used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) project.
+used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) project to drive resource generation.
 
 ## Example Usage
 
@@ -10,13 +10,13 @@ grpc-jersey requires a minimum of Java 8 at this time.
 Snapshot artifacts are available on the Sonatype snapshots repository, releases are available on Maven Central.
 
 Example provided here uses the [gradle-protobuf-plugin](https://github.com/google/protobuf-gradle-plugin)
-but an example using Maven can be found [in examples](https://github.com/fullcontact/grpc-jersey/tree/master/examples/maven/pom.xml).
+but an example using Maven can be found [in examples](https://github.com/Xorlev/grpc-jersey/tree/master/examples/maven/pom.xml).
 
 ```groovy
 ext {
     protobufVersion = "3.2.0"
     grpcVersion = "1.2.0"
-    grpcJerseyVersion = "0.1.3"
+    grpcJerseyVersion = "0.1.4"
 }
 
 protobuf {
@@ -28,7 +28,7 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
         }
         jersey {
-            artifact = "com.fullcontact.grpc-jersey:protoc-gen-jersey:${grpcJerseyVersion}"
+            artifact = "com.xorlev.grpc-jersey:protoc-gen-jersey:${grpcJerseyVersion}"
         }
     }
     generateProtoTasks {
@@ -43,7 +43,7 @@ protobuf {
 You'll also have to be sure to include the `jersey-rpc-support` package in your service:
 
 ```groovy
-compile "com.fullcontact.grpc-jersey:jersey-rpc-support:${grpcJerseyVersion}"
+compile "com.xorlev.grpc-jersey:jersey-rpc-support:${grpcJerseyVersion}"
 ```
 
 Running `./gradlew build` and a protobuf definition that looks roughly like the below
@@ -108,7 +108,7 @@ or
 ```xml
     <configuration>
       <pluginId>grpc-jersey</pluginId>
-      <pluginArtifact>com.fullcontact.grpc-jersey:protoc-gen-jersey:0.1.1:exe:${os.detected.classifier}</pluginArtifact>
+      <pluginArtifact>com.xorlev.grpc-jersey:protoc-gen-jersey:0.1.4:exe:${os.detected.classifier}</pluginArtifact>
       <pluginParameter>yaml=integration-test-base/src/test/proto/http_api_config.yml</pluginParameter>
     </configuration>
 
@@ -121,6 +121,16 @@ uses a `InProcessTransport` if living in the same JVM as the gRPC server. A norm
 for a more traditional reverse proxy.
 
 You can find an example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
+
+## Releases
+
+0.1.4
+ - Changed to 'com.xorlev' artifact group, released on Sonatype/Central.
+ - Query parameters now support repeated types. @gfecher (#15)
+ - Windows artifact is now generated. @gfecher (#15)
+
+0.1.3
+ - YAML support for defining resources and driving code generation. @sypticus (#10, #12)
 
 ## Project status
 

@@ -10,8 +10,8 @@ plugins {
     id 'idea'
     id 'java'
     id 'com.github.johnrengelman.shadow' version '1.2.2'
-    id 'edu.sc.seis.launch4j' version '2.4.2'
     id "com.google.osdetector" version "1.4.0"
+    id 'edu.sc.seis.launch4j' version '2.4.2'
 }
 
 ext {
@@ -32,7 +32,7 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'project-report'
 
-    group = "com.fullcontact.${rootProject.name}"
+    group = "com.xorlev.${rootProject.name}"
 
     configurations.all {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
