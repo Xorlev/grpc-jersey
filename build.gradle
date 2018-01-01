@@ -15,9 +15,9 @@ plugins {
 }
 
 ext {
-    grpcVersion = "1.2.0"
-    lombokVersion = "1.16.10"
-    protobufVersion = "3.2.0"
+    grpcVersion = "1.8.0"
+    lombokVersion = "1.16.18"
+    protobufVersion = "3.5.0"
 }
 
 allprojects {

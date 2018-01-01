@@ -14,9 +14,9 @@ but an example using Maven can be found [in examples](https://github.com/Xorlev/
 
 ```groovy
 ext {
-    protobufVersion = "3.2.0"
-    grpcVersion = "1.2.0"
-    grpcJerseyVersion = "0.1.4"
+    protobufVersion = "3.5.0"
+    grpcVersion = "1.8.0"
+    grpcJerseyVersion = "0.2.0"
 }
 
 protobuf {
