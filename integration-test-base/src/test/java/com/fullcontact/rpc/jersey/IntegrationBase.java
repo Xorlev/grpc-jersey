@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -421,6 +422,28 @@ public abstract class IntegrationBase {
                 .setMessage("HTTP 500 (gRPC: UNKNOWN)")
                 .build();
 
+        assertThat(statusBuilder.build()).isEqualTo(expected);
+    }
+
+    @Test
+    public void testUnaryError() throws Exception {
+        Response response = resources().getJerseyTest()
+                                       .target("/explode")
+                                       .request()
+                                       .buildGet()
+                                       .invoke();
+
+        Status.Builder statusBuilder = Status.newBuilder();
+        JsonFormat.parser().merge(response.readEntity(String.class), statusBuilder);
+
+        Status expected = Status
+                .newBuilder()
+                .setCode(8)
+                .setMessage("HTTP 503 (gRPC: RESOURCE_EXHAUSTED)")
+                .build();
+
+        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(response.getHeaderString("Retry-After")).isEqualTo("30");
         assertThat(statusBuilder.build()).isEqualTo(expected);
     }
 }

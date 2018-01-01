@@ -30,23 +30,24 @@ public class GrpcErrorUtil {
             case OK:
                 return 200;
             case CANCELLED:
-                return 503; // sort of
+                // Usually when the client cancels, so it's a little strange to use 503 but nothing fits better.
+                return 503;
             case UNKNOWN:
                 return 500;
             case INVALID_ARGUMENT:
                 return 400;
             case DEADLINE_EXCEEDED:
-                return 503; // eh?
+                return 503;
             case NOT_FOUND:
                 return 404;
             case ALREADY_EXISTS:
-                return 422; // eh?
+                return 409;
             case PERMISSION_DENIED:
                 return 403;
             case RESOURCE_EXHAUSTED:
                 return 503;
             case FAILED_PRECONDITION:
-                return 412; // maybe
+                return 412;
             case ABORTED:
                 return 500;
             case OUT_OF_RANGE:
@@ -123,7 +124,7 @@ public class GrpcErrorUtil {
                 }
             }
 
-            httpResponse.entity(JsonFormat.printer().print(grpcError.getPayload()));
+            httpResponse.entity(JsonFormat.printer().print(grpcError.getPayload().toBuilder().clearDetails().build()));
         } catch(InvalidProtocolBufferException e) {
             // this should never happen
             throw new RuntimeException(e);

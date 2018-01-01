@@ -3,8 +3,11 @@ package com.fullcontact.rpc.jersey;
 import com.fullcontact.rpc.TestRequest;
 import com.fullcontact.rpc.TestResponse;
 import com.fullcontact.rpc.TestServiceGrpc;
+import com.google.protobuf.util.Durations;
 import com.google.rpc.DebugInfo;
+import com.google.rpc.RetryInfo;
 import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
 /**
@@ -78,5 +81,15 @@ public class EchoTestService extends TestServiceGrpc.TestServiceImplBase {
         } else {
             responseObserver.onCompleted();
         }
+    }
+
+    @Override
+    public void errorMethod(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        Metadata metadata = new Metadata();
+        metadata.put(GrpcErrorUtil.RETRY_INFO_KEY,
+                RetryInfo.newBuilder().setRetryDelay(Durations.fromSeconds(30)).build());
+        responseObserver.onError(
+                Status.RESOURCE_EXHAUSTED
+                .asRuntimeException(metadata));
     }
 }

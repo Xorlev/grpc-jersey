@@ -33,6 +33,9 @@ service TestService {
     rpc StreamMethod1 (TestRequest) returns (stream TestResponse) {
         option (google.api.http).get = "/stream/{s}";
     }
+    rpc ErrorMethod (TestRequest) returns (TestResponse) {
+        option (google.api.http).get = "/explode";
+    }
 }
 enum TestEnum {
     FIRST = 0;
