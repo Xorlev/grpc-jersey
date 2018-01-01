@@ -23,7 +23,6 @@ import java.io.IOException;
 public class ProxyIntegration extends IntegrationBase {
     private static Server server = InProcessServerBuilder.forName("TestService")
                                                          .addService(new EchoTestService())
-                                                         .directExecutor()
                                                          .build();
 
     static {

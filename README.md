@@ -64,6 +64,9 @@ service TestService {
             body: "*";
         };
     }
+    rpc StreamMethod1 (TestRequest) returns (stream TestResponse) {
+            option (google.api.http).get = "/stream/{s}";
+    }
 }
 message TestRequest {
     string id = 1;
@@ -210,8 +213,9 @@ Short-term roadmap:
 - [ ] Performance tests
 - [ ] Generic/pluggable error handling
 - [ ] Supporting streaming RPCs
- - [ ] Server streaming
+ - [X] Server streaming
  - [ ] Client streaming
+ - [ ] BiDi streaming (true bidi streaming is impossible without websockets)
 
 ## Build Process
 

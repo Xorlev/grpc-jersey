@@ -15,7 +15,7 @@ service TestService {
             additional_bindings {
                 post: "/users_nested"
                 body: "nt"
-            };
+            }
         };
     }
     rpc TestMethod3 (TestRequest) returns (TestResponse) {
@@ -30,7 +30,9 @@ service TestService {
     rpc TestMethod6 (TestRequest) returns (TestResponse) {
         //Defined in Yaml
     }
-
+    rpc StreamMethod1 (TestRequest) returns (stream TestResponse) {
+        option (google.api.http).get = "/stream/{s}";
+    }
 }
 enum TestEnum {
     FIRST = 0;
