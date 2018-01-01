@@ -126,11 +126,11 @@ You can find an example of each in the `integration-test-proxy` and `integration
 
 0.1.4
  - Changed to 'com.xorlev' artifact group, released on Sonatype/Central.
- - Query parameters now support repeated types. @gfecher (#15)
- - Windows artifact is now generated. @gfecher (#15)
+ - Query parameters now support repeated types. @gfecher #15
+ - Windows artifact is now generated. @gfecher #16
 
 0.1.3
- - YAML support for defining resources and driving code generation. @sypticus (#10, #12)
+ - YAML support for defining resources and driving code generation. @sypticus #10, #12
 
 ## Project status
 
