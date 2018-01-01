@@ -187,7 +187,7 @@ public class RequestParser {
         }
 
         if(toMerge != null) {
-            JsonFormat.parser().merge(body, toMerge);
+            JsonHandler.parser().merge(body, toMerge);
         }
     }
 }
