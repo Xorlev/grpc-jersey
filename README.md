@@ -183,6 +183,142 @@ environment.jersey().register(new TestServiceGrpcJerseyResource(stub));
 
 You can find a complete example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
 
+## Error handling
+
+grpc-jersey will translate errors raised inside your RPC handler. However, there is some nuance with regards to using
+the "proxy" mode or the "direct invocation" mode. If you use the direct invocation on service implementation, uncaught
+exceptions will use the default Jersey error handler. If you use the proxy mode, uncaught exceptions will be translated
+as INTERNAL errors.
+
+### Error Translation
+
+Errors are translated into a google.rpc.Status message, which has the format when translated to JSON:
+
+```json
+{
+   "code":15,
+   "message":"HTTP 500 (gRPC: DATA_LOSS): Fail-fast: Grue found in write-path.",
+   "details":[
+
+   ]
+}
+```
+
+This payload will be returned in lieu of the actual return type.
+
+The translation of gRPC error code to HTTP error code is done on a best-effort basis:
+
+gRPC Error Name | gRPC Error Code | HTTP Status Code
+--- | --- | ---
+OK | 0 | 200
+CANCELLED | 1 | 503
+UNKNOWN | 2 | 500
+INVALID_ARGUMENT | 3 | 400
+DEADLINE_EXCEEDED | 4 | 503
+NOT_FOUND | 5 | 404
+ALREADY_EXISTS | 6 | 409
+PERMISSION_DENIED | 7 | 403
+RESOURCE_EXHAUSTED | 8 | 503
+FAILED_PRECONDITION | 9 | 412
+ABORTED | 10 | 500
+OUT_OF_RANGE | 11 | 416
+UNIMPLEMENTED | 12 | 501
+INTERNAL | 13 | 500
+UNAVAILABLE | 14 | 503
+DATA_LOSS | 15 | 500
+UNAUTHENTICATED | 16 | 401
+
+The HTTP status code will be applied to the outgoing response as the status code, but will also be a part of the
+message as seen above. The rest of the message comes from the gRPC StatusException/StatusRuntimeException description
+set by `withDescription(String)`. Augmenting the description will append newlines which will be escaped in the final
+output.
+
+The `details` section will always be empty. Protobuf JsonFormat does not support serializing the `google.protobuf.Any`
+type. Any details provided will be stripped by the error handling.
+
+#### Retry-After
+
+If `google.rpc.RetryInfo` is provided in the `details` section, this will be translated into a `Retry-After` header,
+e.x:
+
+```java
+Metadata metadata = new Metadata();
+metadata.put(GrpcErrorUtil.RETRY_INFO_KEY,
+        RetryInfo.newBuilder().setRetryDelay(Durations.fromSeconds(30)).build());
+responseObserver.onError(
+        Status.RESOURCE_EXHAUSTED
+        .asRuntimeException(metadata));
+```
+
+```
+$ curl -v http://localhost:8080/explode
+< HTTP/1.1 503 Service Unavailable
+< Retry-After: 30
+< Content-Type: application/json;charset=UTF-8
+<
+{
+  "code": 8,
+  "message": "HTTP 503 (gRPC: RESOURCE_EXHAUSTED)"
+}
+```
+
+### Streaming RPCs
+
+Streaming RPCs have to be handled a little differently. Headers are sent immediately before responses are produced,
+and streaming RPCs could fail at any point during streaming. In gRPC, this is handled with a _trailer_ (like a header,
+but after the response is produced), but trailers are rarely if ever supported in HTTP/1.1 and often not even in HTTP2.
+Therefore, grpc-jersey signals failure by emitting a `google.protobuf.Status` should your handler return an error at any
+point during streaming. For instance:
+
+```
+> GET /stream/grpc_data_loss?int3=3 HTTP/1.1
+>
+< HTTP/1.1 200 OK
+< Content-Type: application/json;charset=utf-8
+< Transfer-Encoding: chunked
+<
+{"request":{"s":"grpc_data_loss","uint3":0,"uint6":"0","int3":3,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+{"request":{"s":"grpc_data_loss","uint3":0,"uint6":"0","int3":3,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+{"request":{"s":"grpc_data_loss","uint3":0,"uint6":"0","int3":3,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
+{"code":15,"message":"HTTP 500 (gRPC: DATA_LOSS): Fail-fast: Grue found in write-path.\ntest","details":[]}
+```
+
+This behavior can be overridden if desired.
+
+### Overriding error handling
+
+If your project needs to handle errors differently (e.g. you have a standard error payload already, want to change
+error codes mappings, change streaming errors, etc.) you can override error handling at a JVM-global level.
+
+During initialization of your project (RPC server setup), you can provide an implementation of a
+`GrpcJerseyErrorHandler`, see the
+[Default](https://github.com/Xorlev/grpc-jersey/blob/8a022dbb9429af2ba8f45433babcdc5f490378bd/jersey-rpc-support/src/main/java/com/fullcontact/rpc/jersey/GrpcJerseyErrorHandler.java#L34)
+implementation.
+
+```java
+ErrorHandler.setErrorHandler(new MyGrpcJerseyErrorHandler());
+```
+
+## JSON Serialization
+
+JSON serialization/deserialization is done with protobuf's JsonFormat. By default, grpc-jersey emits all fields, even
+if they're set to their default value/empty. This assists with frontends that wish to traverse through structures.
+
+Unary RPCs are emitted with formatting by default, but streaming RPCs are emitted on a single line.
+
+### Overriding JSON formatting
+
+Like error handlers, JSON formatters can be swapped out on a JVM-global basis.
+
+```java
+JsonHandler.setParser(JsonFormat.parser());
+JsonHandler.setUnaryPrinter(JsonFormat.printer());
+JsonHandler.setStreamPrinter(JsonFormat.printer());
+```
+
+This can be used to disable emitting default fields, change formatting, or set parser/printers with ExtensionRegistry
+instances.
+
 ## Releases
 
 0.1.4
