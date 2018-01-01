@@ -335,7 +335,7 @@ project(":integration-test-serverstub") {
                         // under Windows the plugin's working dir is where the plugin is
                         yamlPathPrefix = "../../../"
                     }
-                    option "yaml=${yamlPathPrefix}integration-test-base/src/test/proto/http_api_config.yml"
+                    option "direct,yaml=${yamlPathPrefix}integration-test-base/src/test/proto/http_api_config.yml"
                 }
             }
         }
@@ -393,7 +393,7 @@ project(":integration-test-proxy") {
                         // under Windows the plugin's working dir is where the plugin is
                         yamlPathPrefix = "../../../"
                     }
-                    option "proxy,yaml=${yamlPathPrefix}integration-test-base/src/test/proto/http_api_config.yml"
+                    option "yaml=${yamlPathPrefix}integration-test-base/src/test/proto/http_api_config.yml"
                 }
             }
         }

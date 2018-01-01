@@ -42,7 +42,7 @@ public class CodeGenerator {
             throws Descriptors.DescriptorValidationException {
         Set<String> options = Sets.newHashSet(Splitter.on(',').split(request.getParameter()));
 
-        boolean isProxy = options.contains("proxy");
+        boolean isProxy = !options.contains("direct");
 
         Map<String, Descriptors.Descriptor> lookup = new HashMap<>();
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
