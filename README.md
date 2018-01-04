@@ -444,6 +444,7 @@ Short-term roadmap:
     - [ ] Client streaming
     - [ ] BiDi streaming (true bidi streaming is impossible without websockets)
 - [ ] Direct control of HTTP headers
+- [ ] Deadline handling
 
 Long-term roadmap:
 - Potentially replace Jersey resources with servlet filter. This would make streaming easier.
