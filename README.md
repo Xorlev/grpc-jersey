@@ -3,6 +3,21 @@ protoc plugin for compiling [gRPC](https://www.grpc.io/) RPC services as Jersey/
 [HttpRule](https://cloud.google.com/service-management/reference/rpc/google.api#http) annotations also
 used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) project to drive resource generation.
 
+  * [Example Usage](#example-usage)
+  * [Operation modes](#operation-modes)
+    * [HTTP and gRPC](#http-and-grpc)
+  * [Streaming RPCs](#streaming-rpcs)
+  * [Error handling](#error-handling)
+    * [Error Translation](#error-translation)
+      * [Retry\-After](#retry-after)
+    * [Streaming RPCs](#streaming-rpcs-1)
+    * [Overriding error handling](#overriding-error-handling)
+  * [JSON Serialization](#json-serialization)
+    * [Overriding JSON formatting](#overriding-json-formatting)
+  * [Releases](#releases)
+  * [Project status](#project-status)
+  * [Build Process](#build-process)
+
 ## Example Usage
 
 grpc-jersey requires a minimum of Java 8 at this time.
@@ -140,6 +155,10 @@ generateProtoTasks {
 }
 ```
 
+You can find a complete example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
+
+### HTTP and gRPC
+
 If you plan to run "dual stack", that is, services serving traffic over both HTTP and RPC, you can configure your
 service to share resources and the same interceptor stack and avoid TCP/serialization overhead using a mixture
 of in-process transport. The example below uses Dropwizard, but should be adaptable to any Jersey glue you like.
@@ -197,8 +216,6 @@ environment.lifecycle().manage(new Managed() {
 
 environment.jersey().register(new TestServiceGrpcJerseyResource(stub));
 ```
-
-You can find a complete example of each in the `integration-test-proxy` and `integration-test-serverstub` projects.
 
 ## Streaming RPCs
 
