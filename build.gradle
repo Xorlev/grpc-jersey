@@ -92,6 +92,7 @@ project(":jersey-rpc-support") {
         compile "com.google.protobuf:protobuf-java-util:${protobufVersion}"
         compile "io.grpc:grpc-protobuf:${grpcVersion}"
         compile "io.grpc:grpc-stub:${grpcVersion}"
+        compile "javax.servlet:javax.servlet-api:3.1.0"
         compile "javax.ws.rs:javax.ws.rs-api:2.0.1"
         provided "org.glassfish.jersey.core:jersey-server:2.25"
     }

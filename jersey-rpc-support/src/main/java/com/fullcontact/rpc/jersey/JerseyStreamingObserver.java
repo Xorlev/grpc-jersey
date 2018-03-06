@@ -3,12 +3,17 @@ package com.fullcontact.rpc.jersey;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
-import org.glassfish.jersey.server.ChunkedOutput;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -22,23 +27,29 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
         new Variant(new MediaType("text", "event-stream"), (String) null, null)
     );
 
-    private final ChunkedOutput<String> output;
+    private final AsyncContext asyncContext;
+    private final ServletOutputStream outputStream;
+    private final HttpServletResponse response;
     private final boolean sse;
 
+    private volatile boolean first = true;
     private volatile boolean closed = false;
 
     // Reusable buffer used in the context of a single streaming request, starts at 128 bytes.
     private StringBuilder buffer = new StringBuilder(128);
 
-    public JerseyStreamingObserver(ChunkedOutput<String> output, boolean sse) {
-        this.output = output;
+    public JerseyStreamingObserver(HttpServletRequest request, HttpServletResponse response, boolean sse) throws IOException {
+        this.asyncContext = request.getAsyncContext();
+        this.outputStream = asyncContext.getResponse().getOutputStream();
+        this.response = response;
         this.sse = sse;
     }
 
     @Override
     public void onNext(V value) {
-        if(closed)
+        if (closed) {
             throw new IllegalStateException("JerseyStreamingObserver has already been closed");
+        }
 
         try {
             write(JsonHandler.streamPrinter().print(value));
@@ -51,6 +62,12 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
     @Override
     public void onError(Throwable t) {
         closed = true;
+
+        if (t instanceof EOFException) {
+            // The client went away, there's not much we can do.
+            return;
+        }
+
         try {
             // As we lack supported trailers in standard HTTP, we'll have to make do with emitting an error to the
             // primary stream
@@ -58,12 +75,14 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
             if(errorPayload.isPresent()) {
                 write(errorPayload.get());
             }
-            output.close();
+            outputStream.close();
+            asyncContext.complete();
         }
         catch(IOException e) {
             // Something really broke, try closing the connection.
             try {
-                output.close();
+                outputStream.close();
+                asyncContext.complete();
             } catch (IOException e1) {
                 // Ignored if we already have.
             }
@@ -74,7 +93,7 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
     public void onCompleted() {
         try {
             closed = true;
-            output.close();
+            outputStream.close();
         }
         catch(IOException e) {
             onError(e);
@@ -96,7 +115,8 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
             buffer.append('\n');
         }
 
-        output.write(buffer.toString());
+        outputStream.print(buffer.toString());
+        outputStream.flush();
 
         // Reset buffer position to 0. At this point, the buffer will have a capacity of the max size(value) passed
         // through so far. In the majority of cases, other messages will be of similar (or larger) size,
