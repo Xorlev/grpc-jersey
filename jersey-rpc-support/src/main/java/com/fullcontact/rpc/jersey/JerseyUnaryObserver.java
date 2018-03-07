@@ -1,10 +1,12 @@
 package com.fullcontact.rpc.jersey;
 
+import com.fullcontact.rpc.jersey.HttpHeaderInterceptors.HttpHeaderClientInterceptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
 
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.core.Response;
 
 /**
  * gRPC StreamObserver which publishes to a Jersey AsyncResponse. Used for unary (singular request/response)
@@ -12,11 +14,13 @@ import javax.ws.rs.container.AsyncResponse;
  */
 public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V> {
     private final AsyncResponse asyncResponse;
+    private final HttpHeaderClientInterceptor httpHeaderClientInterceptor;
 
     private volatile boolean closed = false;
 
-    public JerseyUnaryObserver(AsyncResponse asyncResponse) {
+    public JerseyUnaryObserver(AsyncResponse asyncResponse, HttpHeaderClientInterceptor httpHeaderClientInterceptor) {
         this.asyncResponse = asyncResponse;
+        this.httpHeaderClientInterceptor = httpHeaderClientInterceptor;
     }
 
     @Override
@@ -24,7 +28,11 @@ public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V>
         if(closed)
             throw new IllegalStateException("JerseyUnaryObserver has already been closed");
         try {
-            asyncResponse.resume(JsonHandler.unaryPrinter().print(value));
+            Response response = httpHeaderClientInterceptor
+                    .withResponseHeaders(Response.ok())
+                    .entity(JsonHandler.unaryPrinter().print(value))
+                    .build();
+                asyncResponse.resume(response);
         }
         catch(InvalidProtocolBufferException e) {
             onError(e);

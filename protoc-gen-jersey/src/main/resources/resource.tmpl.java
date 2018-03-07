@@ -1,5 +1,6 @@
 package {{javaPackage}};
 
+import com.fullcontact.rpc.jersey.HttpHeaderInterceptors;
 import com.fullcontact.rpc.jersey.JerseyUnaryObserver;
 import com.fullcontact.rpc.jersey.JerseyStreamingObserver;
 import com.fullcontact.rpc.jersey.RequestParser;
@@ -40,29 +41,27 @@ public class {{className}} {
             {{#pathParams}}
             @PathParam("{{name}}") String {{nameSanitized}},
             {{/pathParams}}
-            @Context UriInfo uriInfo
-            {{#parseHeaders}}
-            ,@Context HttpHeaders headers
-            {{/parseHeaders}}
+            @Context UriInfo uriInfo,
+            @Context HttpHeaders headers
             {{#bodyFieldPath}}
             ,String body
 {{/bodyFieldPath}}
             ,@Suspended final AsyncResponse asyncResponse) throws IOException {
-        JerseyUnaryObserver<{{responseType}}> observer = new JerseyUnaryObserver<>(asyncResponse);
+        HttpHeaderInterceptors.HttpHeaderClientInterceptor interceptor =
+            HttpHeaderInterceptors.clientInterceptor(headers);
+        JerseyUnaryObserver<{{responseType}}> observer = new JerseyUnaryObserver<>(asyncResponse, interceptor);
         {{requestType}}.Builder r = {{requestType}}.newBuilder();
-    {{#parseHeaders}}
-        // Shadowed to prevent building up headers
-        {{grpcStub}} stub;
-    {{/parseHeaders}}
+        {{grpcStub}} stub = this.stub;
         try {
-            {{#parseHeaders}}
-            stub = RequestParser.parseHeaders(headers, this.stub);
-            {{/parseHeaders}}
+            {{#isProxy}}
+            stub = RequestParser.parseHeaders(headers, stub);
+            stub = stub.withInterceptors(interceptor);
+            {{/isProxy}}
             {{#bodyFieldPath}}
-            RequestParser.handleBody("{{bodyFieldPath}}",r,body);
+            RequestParser.handleBody("{{bodyFieldPath}}", r, body);
             {{/bodyFieldPath}}
             {{^bodyFieldPath}}
-            RequestParser.parseQueryParams(uriInfo,r);
+            RequestParser.parseQueryParams(uriInfo, r);
             {{/bodyFieldPath}}
             {{#pathParams}}
             RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
@@ -86,38 +85,37 @@ public class {{className}} {
             @Suspended final AsyncResponse asyncResponse,
             @Context HttpServletRequest servletRequest,
             @Context HttpServletResponse servletResponse,
-            @Context UriInfo uriInfo
-            {{#parseHeaders}}
-            ,@Context HttpHeaders headers
-            {{/parseHeaders}}
-            ,@Context Request context
+            @Context UriInfo uriInfo,
+            @Context HttpHeaders headers,
+            @Context Request context
             {{#bodyFieldPath}}
             ,String body{{/bodyFieldPath}}) throws IOException {
         Variant variant = context.selectVariant(VARIANT_LIST);
         boolean sse = "text/event-stream".equals(variant.getMediaType().toString());
 
-        JerseyStreamingObserver<{{responseType}}> observer = new JerseyStreamingObserver<>(servletRequest, servletResponse, sse);
+        HttpHeaderInterceptors.HttpHeaderClientInterceptor interceptor =
+            HttpHeaderInterceptors.clientInterceptor(headers);
+        JerseyStreamingObserver<{{responseType}}> observer =
+            new JerseyStreamingObserver<>(interceptor, servletRequest, servletResponse, sse);
         {{requestType}}.Builder r = {{requestType}}.newBuilder();
-        {{#parseHeaders}}
-        // Shadowed to prevent building up headers
-        {{grpcStub}} stub;
-        {{/parseHeaders}}
+        {{grpcStub}} stub = this.stub;
         try {
-        {{#parseHeaders}}
-        stub = RequestParser.parseHeaders(headers, this.stub);
-        {{/parseHeaders}}
-        {{#bodyFieldPath}}
-        RequestParser.handleBody("{{bodyFieldPath}}",r,body);
-        {{/bodyFieldPath}}
-        {{^bodyFieldPath}}
-        RequestParser.parseQueryParams(uriInfo,r);
-        {{/bodyFieldPath}}
-        {{#pathParams}}
-        RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
-        {{/pathParams}}
+            {{#isProxy}}
+            stub = RequestParser.parseHeaders(headers, stub);
+            stub = stub.withInterceptors(interceptor);
+            {{/isProxy}}
+            {{#bodyFieldPath}}
+            RequestParser.handleBody("{{bodyFieldPath}}", r, body);
+            {{/bodyFieldPath}}
+            {{^bodyFieldPath}}
+            RequestParser.parseQueryParams(uriInfo, r);
+            {{/bodyFieldPath}}
+            {{#pathParams}}
+            RequestParser.setFieldSafely(r, "{{name}}", {{nameSanitized}});
+            {{/pathParams}}
         } catch(Exception e) {
-        observer.onError(e);
-        return;
+            observer.onError(e);
+            return;
         }
 
         stub.{{methodNameLower}}(r.build(), observer);

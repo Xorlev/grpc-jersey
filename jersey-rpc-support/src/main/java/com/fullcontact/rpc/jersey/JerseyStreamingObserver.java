@@ -1,5 +1,6 @@
 package com.fullcontact.rpc.jersey;
 
+import com.fullcontact.rpc.jersey.HttpHeaderInterceptors.HttpHeaderClientInterceptor;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
@@ -17,19 +18,21 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * gRPC StreamObserver which publishes to a Jersey ChunkedOutput. Used for server-side streaming of messages.
+ * gRPC StreamObserver which publishes JSON-formatted messages from a gRPC server stream. Uses underlying servlet.
+ * {@link AsyncContext}.
  *
  * @author Michael Rose (xorlev)
  */
 public class JerseyStreamingObserver<V extends Message> implements StreamObserver<V> {
     public static final List<Variant> VARIANT_LIST = ImmutableList.of(
-        new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null),
-        new Variant(new MediaType("text", "event-stream"), (String) null, null)
+            new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null),
+            new Variant(new MediaType("text", "event-stream"), (String) null, null)
     );
 
     private final AsyncContext asyncContext;
+    private final HttpHeaderClientInterceptor httpHeaderClientInterceptor;
+    private final HttpServletResponse httpServletResponse;
     private final ServletOutputStream outputStream;
-    private final HttpServletResponse response;
     private final boolean sse;
 
     private volatile boolean first = true;
@@ -38,10 +41,16 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
     // Reusable buffer used in the context of a single streaming request, starts at 128 bytes.
     private StringBuilder buffer = new StringBuilder(128);
 
-    public JerseyStreamingObserver(HttpServletRequest request, HttpServletResponse response, boolean sse) throws IOException {
-        this.asyncContext = request.getAsyncContext();
+    public JerseyStreamingObserver(
+            HttpHeaderClientInterceptor httpHeaderClientInterceptor,
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse,
+            boolean sse)
+            throws IOException {
+        this.asyncContext = httpServletRequest.getAsyncContext();
+        this.httpHeaderClientInterceptor = httpHeaderClientInterceptor;
+        this.httpServletResponse = httpServletResponse;
         this.outputStream = asyncContext.getResponse().getOutputStream();
-        this.response = response;
         this.sse = sse;
     }
 
@@ -51,10 +60,11 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
             throw new IllegalStateException("JerseyStreamingObserver has already been closed");
         }
 
+        addHeadersIfNotSent();
+
         try {
             write(JsonHandler.streamPrinter().print(value));
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             onError(e);
         }
     }
@@ -72,13 +82,12 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
             // As we lack supported trailers in standard HTTP, we'll have to make do with emitting an error to the
             // primary stream
             Optional<String> errorPayload = ErrorHandler.handleStreamingError(t);
-            if(errorPayload.isPresent()) {
+            if (errorPayload.isPresent()) {
                 write(errorPayload.get());
             }
             outputStream.close();
             asyncContext.complete();
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             // Something really broke, try closing the connection.
             try {
                 outputStream.close();
@@ -91,27 +100,42 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
 
     @Override
     public void onCompleted() {
+        addHeadersIfNotSent();
+
         try {
             closed = true;
+            outputStream.flush();
             outputStream.close();
-        }
-        catch(IOException e) {
+            asyncContext.complete();
+        } catch (IOException e) {
             onError(e);
         }
     }
 
+    private void addHeadersIfNotSent() {
+        if (!first || closed) {
+            return;
+        } else {
+            first = false;
+        }
+
+        for (Map.Entry<String, String> header : httpHeaderClientInterceptor.getHttpResponseHeaders().entries()) {
+            httpServletResponse.addHeader(header.getKey(), header.getValue());
+        }
+    }
+
     private void write(String value) throws IOException {
-        if(value.isEmpty()) {
+        if (value.isEmpty()) {
             return;
         }
 
-        if(sse) {
+        if (sse) {
             buffer.append("data: ");
         }
 
         buffer.append(value).append('\n');
 
-        if(sse) {
+        if (sse) {
             buffer.append('\n');
         }
 

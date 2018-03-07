@@ -2,12 +2,11 @@ package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.TestServiceGrpc;
 import com.fullcontact.rpc.TestServiceGrpcJerseyResource;
-
 import io.dropwizard.testing.junit.ResourceTestRule;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
-import org.glassfish.jersey.test.jetty.JettyTestContainerFactory;
+import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -22,14 +21,13 @@ import java.io.IOException;
 @RunWith(JUnit4.class)
 public class ProxyIntegration extends IntegrationBase {
     private static Server server = InProcessServerBuilder.forName("TestService")
-                                                         .addService(new EchoTestService())
-                                                         .build();
+            .addService(GrpcJerseyPlatformInterceptors.intercept(new EchoTestService()))
+            .build();
 
     static {
         try {
             server.start();
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -43,13 +41,18 @@ public class ProxyIntegration extends IntegrationBase {
 
     @ClassRule
     public static final ResourceTestRule resources =
-        ResourceTestRule.builder()
-                        .addResource(new TestServiceGrpcJerseyResource(stub))
-                        .setTestContainerFactory(new JettyTestContainerFactory())
-                        .build();
+            ResourceTestRule.builder()
+                    .addResource(new TestServiceGrpcJerseyResource(stub))
+                    .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
+                    .build();
 
     @Override
     public ResourceTestRule resources() {
         return resources;
+    }
+
+    @Override
+    public boolean supportsHttpHeaders() {
+        return true;
     }
 }

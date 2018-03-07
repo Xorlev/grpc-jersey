@@ -6,6 +6,7 @@ used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) proje
   * [Example Usage](#example-usage)
   * [Operation modes](#operation-modes)
     * [HTTP and gRPC](#http-and-grpc)
+  * [Working with HTTP headers](#working-with-http-headers)
   * [Streaming RPCs](#streaming-rpcs)
   * [Error handling](#error-handling)
     * [Error Translation](#error-translation)
@@ -264,6 +265,73 @@ data: {"request":{"s":"hello","uint3":0,"uint6":"0","int3":2,"int6":"0","bytearr
 data: {"request":{"s":"hello","uint3":0,"uint6":"0","int3":2,"int6":"0","bytearray":"","boolean":false,"f":0.0,"d":0.0,"enu":"FIRST","rep":[],"repStr":[]}}
 ```
 
+## Working with HTTP headers
+
+_NOTE:_ This only works for uses using the "proxy" configuration. Direct invocation mode does not support HTTP header
+manipulation.
+
+grpc-jersey allows you to use and manipulate HTTP headers from within your RPC handler. To do so, you'll need to install
+a server interceptor into your RPC stack. If you're using the recommended "dual-stack" configuration, you can modify it
+like so:
+
+```java
+  // Service stack. This is where you define your interceptors.
+  ServerServiceDefinition serviceStack = ServerInterceptors.intercept(
+          GrpcJerseyPlatformInterceptors.intercept(new EchoTestService()),
+          new GrpcLoggingInterceptor(),
+          new MyAuthenticationInterceptor() // your interceptor stack.
+  );
+```
+
+Preferably, you'll want to use the helper provided by `GrpcJerseyPlatformInterceptors`. Future platform interceptors
+will be added here automatically, allowing your code to remain the same and take advantage of new functionality.
+However, you can also use just the HttpHeaderInterceptor directly should you desire:
+
+```java
+  // Service stack. This is where you define your interceptors.
+  ServerServiceDefinition serviceStack = ServerInterceptors.intercept(
+          new EchoTestService(),
+          HttpHeaderInterceptors.serverInterceptor(),
+          new GrpcLoggingInterceptor(),
+          new MyAuthenticationInterceptor() // your interceptor stack.
+  );
+```
+
+The client interceptor is automatically attached to your stubs by code generation after grpc-jersey 0.3.0.
+
+To read & manipulate HTTP headers, below is an example right from the `EchoTestService` in this project:
+
+```java
+    @Override
+    public void testMethod3(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        for (Map.Entry<String, String> header : HttpHeaderContext.requestHeaders().entries()) {
+            if (header.getKey().startsWith("grpc-jersey")) {
+                HttpHeaderContext.setResponseHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
+        responseObserver.onCompleted();
+    }
+```
+
+`HttpHeaderContext` is your interface into the HTTP headers. You can see request headers with
+`HttpHeaderContext.requestHeaders()` and set response headers with
+`HttpHeaderContext.setResponseHeader(headerName, headerValue)` or
+`HttpHeaderContext.addResponseHeader(headerName, headerValue)`, the former setting a single value (or list of values),
+clearing existing ones, and the latter adding values. You can use `HttpHeaderContext.clearResponseHeader(headerName)`
+or `HttpHeaderContext.clearResponseHeaders()` to remove header state. **Note:** this API is considered beta and may
+change in the future.
+
+While `HttpHeaderContext` is gRPC Context-aware and request headers can be safely accessed from background threads
+executed with an attached context, manipulating response headers should only be done from a single thread as no effort
+is put into synchronizing the state.
+
+### Headers in the main gRPC Metadata (deprecated)
+
+HTTP request headers are read into the main gRPC Metadata when using the "proxy" mode by default, however this is
+considered deprecated behavior. Utilizing the new `HttpHeaderContext` is the supported method.
+
 ## Error handling
 
 grpc-jersey will translate errors raised inside your RPC handler. However, there is some nuance with regards to using
@@ -402,6 +470,11 @@ instances.
 
 ## Releases
 
+0.3.0
+ - First-class HTTP header support. HTTP request headers are read into and attached to the gRPC Context. Likewise,
+   response headers can be controlled from within your RPC handler. See
+   [Working with HTTP headers](#working-with-http-headers). [#23](https://github.com/Xorlev/grpc-jersey/pull/23)
+
 0.2.0
  - Server-to-client RPC streaming support. [#14](https://github.com/Xorlev/grpc-jersey/pull/14)
  - `ALREADY_EXISTS` gRPC error code now maps to `409 Conflict`.
@@ -443,7 +516,8 @@ Short-term roadmap:
     - [X] Server streaming
     - [ ] Client streaming
     - [ ] BiDi streaming (true bidi streaming is impossible without websockets)
-- [ ] Direct control of HTTP headers
+- [x] Direct control of HTTP headers
+- [ ] Out of the box CORS support
 
 Long-term roadmap:
 - Potentially replace Jersey resources with servlet filter. This would make streaming easier.

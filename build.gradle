@@ -16,6 +16,7 @@ plugins {
 
 ext {
     grpcVersion = "1.8.0"
+    jerseyVersion = "2.25.1"
     lombokVersion = "1.16.18"
     protobufVersion = "3.5.0"
 }
@@ -94,7 +95,7 @@ project(":jersey-rpc-support") {
         compile "io.grpc:grpc-stub:${grpcVersion}"
         compile "javax.servlet:javax.servlet-api:3.1.0"
         compile "javax.ws.rs:javax.ws.rs-api:2.0.1"
-        provided "org.glassfish.jersey.core:jersey-server:2.25"
+        provided "org.glassfish.jersey.core:jersey-server:${jerseyVersion}"
     }
 
     protobuf {
@@ -138,7 +139,7 @@ project(":protoc-gen-jersey") {
         compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.5"
         compile "com.fasterxml.jackson.core:jackson-databind:2.8.5"
 
-        testCompile 'org.glassfish.jersey.core:jersey-common:2.24.1'
+        testCompile "org.glassfish.jersey.core:jersey-common:${jerseyVersion}"
     }
 
     protobuf {
@@ -264,9 +265,7 @@ project(":integration-test-base") {
         testCompile('io.dropwizard:dropwizard-testing:1.0.5') {
             exclude group: 'org.eclipse.jetty'
         }
-        testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:2.23.2'
-
-
+        testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
     }
 
     protobuf {
@@ -311,7 +310,7 @@ project(":integration-test-serverstub") {
             exclude group: 'org.eclipse.jetty'
         }
         testCompile group: 'io.dropwizard', name: 'dropwizard-jetty', version: '0.9.3'
-        testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:2.25.1'
+        testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
     }
 
     protobuf {
@@ -367,9 +366,7 @@ project(":integration-test-proxy") {
             exclude group: 'org.eclipse.jetty'
         }
         testCompile group: 'io.dropwizard', name: 'dropwizard-jetty', version: '0.9.3'
-        testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:2.25.1'
-
-
+        testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
     }
 
     protobuf {

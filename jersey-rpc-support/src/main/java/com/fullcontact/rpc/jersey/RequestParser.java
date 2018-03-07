@@ -59,8 +59,10 @@ public class RequestParser {
 
     public static Metadata parseHeaders(HttpHeaders headers){
         Metadata newHeaders = new Metadata();
-        headers.getRequestHeaders().forEach((k, v) ->
-            newHeaders.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v.get(0))
+
+        headers.getRequestHeaders().forEach((k, v) -> {
+                newHeaders.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v.get(0));
+            }
         );
 
         return newHeaders;

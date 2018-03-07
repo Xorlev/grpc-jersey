@@ -174,7 +174,7 @@ public class CodeGenerator {
             .className(className)
             .grpcStub(grpcImplClass)
             .methods(methods.build())
-            .parseHeaders(isProxy)
+            .isProxy(isProxy)
             .fileName(fileName)
             .build();
     }
@@ -315,7 +315,7 @@ public class CodeGenerator {
         String className;
         String grpcStub; // fully-qualified class name;
         List<ResourceMethodToGenerate> methods;
-        boolean parseHeaders;
+        boolean isProxy;
         String fileName;
 
         String grpcJerseyVersion() {
