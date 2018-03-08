@@ -518,6 +518,7 @@ Short-term roadmap:
     - [ ] BiDi streaming (true bidi streaming is impossible without websockets)
 - [x] Direct control of HTTP headers
 - [ ] Out of the box CORS support
+- [ ] Better deadline handling
 
 Long-term roadmap:
 - Potentially replace Jersey resources with servlet filter. This would make streaming easier.
