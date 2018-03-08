@@ -71,20 +71,24 @@ public class JerseyStreamingObserver<V extends Message> implements StreamObserve
 
     @Override
     public void onError(Throwable t) {
-        closed = true;
-
         if (t instanceof EOFException) {
+            closed = true;
             // The client went away, there's not much we can do.
             return;
         }
 
         try {
+            // Send headers if we haven't sent anything yet.
+            addHeadersIfNotSent();
+
             // As we lack supported trailers in standard HTTP, we'll have to make do with emitting an error to the
             // primary stream
             Optional<String> errorPayload = ErrorHandler.handleStreamingError(t);
             if (errorPayload.isPresent()) {
                 write(errorPayload.get());
             }
+
+            closed = true;
             outputStream.close();
             asyncContext.complete();
         } catch (IOException e) {

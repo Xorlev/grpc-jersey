@@ -463,9 +463,48 @@ public abstract class IntegrationBase {
         assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
     }
 
+
+    @Test
+    public void testStreamGet_immediateError_returnsHeaders() throws Exception {
+        if (!supportsHttpHeaders()) {
+            return;
+        }
+
+        Response response = resources().getJerseyTest()
+                                       .target("/stream/explode")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "SECOND")
+                                       .queryParam("int3", "0")
+                                       .queryParam("x", "y")
+                                       .queryParam("nt.f1", "abcd")
+                                       .request()
+                                       .buildGet()
+                                       .invoke();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
+
+        String json = reader.readLine();
+        Status.Builder statusBuilder = Status.newBuilder();
+        JsonFormat.parser().merge(json, statusBuilder);
+
+        // As expected, Status loses "cause" and "details" after transmission.
+        // Normally, details would be set, but JsonFormat doesn't support serializing Any.
+        Status expected = Status
+                .newBuilder()
+                .setCode(2)
+                .setMessage("HTTP 500 (gRPC: UNKNOWN)")
+                .build();
+
+        assertThat(statusBuilder.build()).isEqualTo(expected);
+
+        assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
+    }
+
     @Test
     public void testStreamGetStatusError() throws Exception {
-        InputStream response = resources().getJerseyTest()
+        Response response = resources().getJerseyTest()
                                        .target("/stream/grpc_data_loss")
                                        .queryParam("d", 1234.5678)
                                        .queryParam("enu", "SECOND")
@@ -474,9 +513,9 @@ public abstract class IntegrationBase {
                                        .queryParam("nt.f1", "abcd")
                                        .request()
                                        .buildGet()
-                                       .invoke(InputStream.class);
+                                       .invoke();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
 
         // int3 controls "successful" messages. Next request will throw.
         for (int i = 0; i < 10; i++) {
@@ -505,6 +544,10 @@ public abstract class IntegrationBase {
                 .build();
 
         assertThat(statusBuilder.build()).isEqualTo(expected);
+
+        if (supportsHttpHeaders()) {
+            assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
+        }
     }
 
     @Test

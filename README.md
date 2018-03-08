@@ -327,6 +327,20 @@ While `HttpHeaderContext` is gRPC Context-aware and request headers can be safel
 executed with an attached context, manipulating response headers should only be done from a single thread as no effort
 is put into synchronizing the state.
 
+### Streaming
+
+Streaming RPCs will apply any headers set before the first message is sent or before the stream is closed if no messages
+are sent.
+
+### Errors
+
+Headers are optionally applied by the GrpcJerseyErrorHandler on error (for unary RPCs). The default (provided)
+implementation will honor headers set by the RPC handler on all error responses.
+
+Additionally, as per the caveats with streaming RPCs in general, any additional headers added to an in-progress
+stream will be ignored, as headers can only be sent once in HTTP/1.x's common implementations, only headers present
+before the first message (or close/error) will be applied.
+
 ### Headers in the main gRPC Metadata (deprecated)
 
 HTTP request headers are read into the main gRPC Metadata when using the "proxy" mode by default, however this is
@@ -474,6 +488,8 @@ instances.
  - First-class HTTP header support. HTTP request headers are read into and attached to the gRPC Context. Likewise,
    response headers can be controlled from within your RPC handler. See
    [Working with HTTP headers](#working-with-http-headers). [#23](https://github.com/Xorlev/grpc-jersey/pull/23)
+ - **Breaking change:** API of GrpcJerseyErrorHandler has changed. If you haven't implemented a custom error handler,
+   this doesn't affect you. If so, please migrate your handler to the new API.
 
 0.2.0
  - Server-to-client RPC streaming support. [#14](https://github.com/Xorlev/grpc-jersey/pull/14)

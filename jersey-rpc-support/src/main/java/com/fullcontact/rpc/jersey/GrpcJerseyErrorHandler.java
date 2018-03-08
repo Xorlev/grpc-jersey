@@ -1,24 +1,32 @@
 package com.fullcontact.rpc.jersey;
 
+import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
-
+import java.io.IOException;
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.Optional;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 /**
  * Pluggable error handler used by the {@link JerseyUnaryObserver} and {@link JerseyStreamingObserver}.
  */
+@Beta
 public interface GrpcJerseyErrorHandler {
     /**
      * Handles an exception raised in a unary (request/response) RPC handler.
      *
+     * It is up to each implementation as to whether they honor the responseHeaders set by the RPC handler.
+     *
      * @param t throwable raised
-     * @param response JAX-RS AsyncResponse, can call cancel() or resume() with a string payload or {@link Response}.
+     * @param responseHeaders headers set by the RPC handler
+     * @return response JAX-RS Response. Returning {@link Optional#empty()} will call {@link AsyncResponse#cancel()}.
      */
-    void handleUnaryError(Throwable t, AsyncResponse response);
+    Optional<Response> handleUnaryError(Throwable t, ImmutableMultimap<String, String> responseHeaders);
 
     /**
      * Handles an exception raised in a server streaming RPC handler. As HTTP/1.1 practically doesn't support trailers,
@@ -32,14 +40,25 @@ public interface GrpcJerseyErrorHandler {
     Optional<String> handleStreamingError(Throwable t) throws IOException;
 
     class Default implements GrpcJerseyErrorHandler {
-
         @Override
-        public void handleUnaryError(Throwable t, AsyncResponse asyncResponse) {
-            if(t instanceof InvalidProtocolBufferException) {
-                asyncResponse.resume(Response.status(Response.Status.BAD_REQUEST).entity(t.getMessage()).build());
+        public Optional<Response> handleUnaryError(Throwable t, ImmutableMultimap<String, String> responseHeaders) {
+            Response response;
+            if (t instanceof InvalidProtocolBufferException) {
+                response = Response.status(Response.Status.BAD_REQUEST).entity(t.getMessage()).build();
             } else {
-                asyncResponse.resume(GrpcErrorUtil.createJerseyResponse(t));
+                response = GrpcErrorUtil.createJerseyResponse(t);
             }
+
+            if (!responseHeaders.isEmpty()) {
+                ResponseBuilder responseBuilder = Response.fromResponse(response);
+                for (Map.Entry<String, String> entry : responseHeaders.entries()) {
+                    responseBuilder.header(entry.getKey(), entry.getValue());
+                }
+
+                response = responseBuilder.build();
+            }
+
+            return Optional.of(response);
         }
 
         @Override

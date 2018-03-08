@@ -5,12 +5,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
 
+import java.util.Optional;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 /**
- * gRPC StreamObserver which publishes to a Jersey AsyncResponse. Used for unary (singular request/response)
- * semantics.
+ * gRPC StreamObserver which publishes to a Jersey AsyncResponse. Used for unary (singular request/response) semantics.
  */
 public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V> {
     private final AsyncResponse asyncResponse;
@@ -25,16 +26,17 @@ public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V>
 
     @Override
     public void onNext(V value) {
-        if(closed)
+        if (closed) {
             throw new IllegalStateException("JerseyUnaryObserver has already been closed");
+        }
         try {
             Response response = httpHeaderClientInterceptor
                     .withResponseHeaders(Response.ok())
                     .entity(JsonHandler.unaryPrinter().print(value))
                     .build();
-                asyncResponse.resume(response);
-        }
-        catch(InvalidProtocolBufferException e) {
+            asyncResponse.resume(response);
+            closed = true;
+        } catch (InvalidProtocolBufferException e) {
             onError(e);
         }
     }
@@ -42,7 +44,13 @@ public class JerseyUnaryObserver<V extends Message> implements StreamObserver<V>
     @Override
     public void onError(Throwable t) {
         closed = true;
-        ErrorHandler.handleUnaryError(t, asyncResponse);
+        Optional<Response> response = ErrorHandler
+                .handleUnaryError(t, httpHeaderClientInterceptor.getHttpResponseHeaders());
+        if (response.isPresent()) {
+            asyncResponse.resume(response.get());
+        } else {
+            asyncResponse.cancel();
+        }
     }
 
     @Override
