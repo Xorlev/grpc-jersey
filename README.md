@@ -32,7 +32,7 @@ but an example using Maven can be found [in examples](https://github.com/Xorlev/
 ext {
     protobufVersion = "3.5.0"
     grpcVersion = "1.8.0"
-    grpcJerseyVersion = "0.2.0"
+    grpcJerseyVersion = "0.3.0"
 }
 
 protobuf {
@@ -489,7 +489,7 @@ instances.
    response headers can be controlled from within your RPC handler. See
    [Working with HTTP headers](#working-with-http-headers). [#23](https://github.com/Xorlev/grpc-jersey/pull/23)
  - **Breaking change:** API of GrpcJerseyErrorHandler has changed. If you haven't implemented a custom error handler,
-   this doesn't affect you. If so, please migrate your handler to the new API.
+   this doesn't affect you. If you have, please migrate your handler to the new API.
 
 0.2.0
  - Server-to-client RPC streaming support. [#14](https://github.com/Xorlev/grpc-jersey/pull/14)
