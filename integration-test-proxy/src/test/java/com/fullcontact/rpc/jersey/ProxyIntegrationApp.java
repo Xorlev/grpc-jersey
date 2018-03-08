@@ -2,7 +2,6 @@ package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.TestServiceGrpc;
 import com.fullcontact.rpc.TestServiceGrpcJerseyResource;
-
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
@@ -23,7 +22,8 @@ public class ProxyIntegrationApp extends Application<Configuration> {
     @Override
     public void run(Configuration configuration, Environment environment) throws Exception {
         Server server = InProcessServerBuilder.forName("TestService")
-                                              .addService(new EchoTestService())
+                                              .addService(GrpcJerseyPlatformInterceptors
+                                                      .intercept(new EchoTestService()))
                                               .build();
         server.start();
 
@@ -33,6 +33,8 @@ public class ProxyIntegrationApp extends Application<Configuration> {
                                         .usePlaintext(true)
                                         .directExecutor()
                                         .build());
+
+
 
         environment.jersey().register(new TestServiceGrpcJerseyResource(stub));
     }

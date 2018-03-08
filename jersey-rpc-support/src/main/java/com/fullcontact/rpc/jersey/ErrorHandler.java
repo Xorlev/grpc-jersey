@@ -1,8 +1,9 @@
 package com.fullcontact.rpc.jersey;
 
-import javax.ws.rs.container.AsyncResponse;
+import com.google.common.collect.ImmutableMultimap;
 import java.io.IOException;
 import java.util.Optional;
+import javax.ws.rs.core.Response;
 
 /**
  * Registry for (currently) JVM-global gRPC error handlers. This allows users to override the error handling
@@ -15,8 +16,8 @@ public final class ErrorHandler {
 
     private ErrorHandler() {}
 
-    static void handleUnaryError(Throwable t, AsyncResponse response) {
-        errorHandler.handleUnaryError(t, response);
+    static Optional<Response> handleUnaryError(Throwable t, ImmutableMultimap<String, String> responseHeaders) {
+        return errorHandler.handleUnaryError(t, responseHeaders);
     }
 
     static Optional<String> handleStreamingError(Throwable t) throws IOException {

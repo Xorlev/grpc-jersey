@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package grpcjersey;
+
+option java_multiple_files = true;
+option java_package = "com.fullcontact.rpc";
+
+message Headers {
+    // List of headers, allows duplicated key names.
+    repeated Header header = 1;
+}
+
+message Header {
+    string name = 1;
+    string value = 2;
+}

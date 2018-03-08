@@ -3,12 +3,16 @@ package com.fullcontact.rpc.jersey;
 import com.fullcontact.rpc.TestRequest;
 import com.fullcontact.rpc.TestResponse;
 import com.fullcontact.rpc.TestServiceGrpc;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.protobuf.util.Durations;
 import com.google.rpc.DebugInfo;
 import com.google.rpc.RetryInfo;
+import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+
+import java.util.Map;
 
 /**
  * gRPC service that echos the request into the response
@@ -30,6 +34,12 @@ public class EchoTestService extends TestServiceGrpc.TestServiceImplBase {
 
     @Override
     public void testMethod3(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        for (Map.Entry<String, String> header : HttpHeaderContext.requestHeaders().entries()) {
+            if (header.getKey().startsWith("grpc-jersey")) {
+                HttpHeaderContext.setResponseHeader(header.getKey(), header.getValue());
+            }
+        }
+
         responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
         responseObserver.onCompleted();
     }
@@ -54,6 +64,8 @@ public class EchoTestService extends TestServiceGrpc.TestServiceImplBase {
 
     @Override
     public void streamMethod1(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        HttpHeaderContext.addResponseHeader("X-Stream-Test", "Hello, World!");
+
         for(int i = 0; i < request.getInt3(); i++) {
             responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
 

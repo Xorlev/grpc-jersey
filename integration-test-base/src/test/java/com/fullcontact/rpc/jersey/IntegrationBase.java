@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class IntegrationBase {
     public abstract ResourceTestRule resources();
 
+    public abstract boolean supportsHttpHeaders();
+
     @Test
     public void testBasicGet() throws Exception {
         // /users/{s}/{uint3}/{nt.f1}
@@ -168,16 +170,20 @@ public abstract class IntegrationBase {
     @Test
     public void testAdvancedGet() throws Exception {
         // /users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
-        String responseJson = resources().getJerseyTest()
+        Response httpResponse = resources().getJerseyTest()
                                        .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
                                        .queryParam("d", 1234.5678)
                                        .queryParam("enu", "SECOND")
                                        .queryParam("uint3", "5678") // ensure path param has precedence
                                        .queryParam("x", "y")
                                        .request()
+                                       .header("grpc-jersey-Test", "Header")
+                                       .header("grpc-jersey-TestList", "1")
+                                       .header("grpc-jersey-TestList", "2")
                                        .buildGet()
-                                       .invoke(String.class);
+                                       .invoke();
 
+        String responseJson = httpResponse.readEntity(String.class);
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
         TestResponse response = responseFromJson.build();
@@ -187,6 +193,15 @@ public abstract class IntegrationBase {
         assertThat(response.getRequest().getD()).isEqualTo(1234.5678);
         assertThat(response.getRequest().getEnu()).isEqualTo(TestEnum.SECOND);
         assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+
+        if (supportsHttpHeaders()) {
+            assertThat(httpResponse.getStringHeaders().getFirst("grpc-jersey-Test")).isEqualTo("Header");
+
+            // According to http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2, multiple header values can be
+            // combined into a comma-separated list, but it doesn't say anything about parsing them back out again.
+            // grpc-jersey chooses to maintain Jersey's behavior and not impose its own header parsing code on top.
+            assertThat(httpResponse.getStringHeaders().get("grpc-jersey-TestList")).containsExactly("1,2");
+        }
     }
 
     @Test
@@ -217,7 +232,7 @@ public abstract class IntegrationBase {
     public void testAdvancedGetFromYaml() throws Exception {
         // /yaml_users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         String responseJson = resources().getJerseyTest()
-            .target("/yaml_users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
+            .target("/yaml_users/hello/string1/test/x/1234/testAdvancedGetFromYaml/foo/bar/baz/test")
             .queryParam("d", 1234.5678)
             .queryParam("enu", "SECOND")
             .queryParam("uint3", "5678") // ensure path param has precedence
@@ -234,14 +249,14 @@ public abstract class IntegrationBase {
         assertThat(response.getRequest().getUint3()).isEqualTo(1234);
         assertThat(response.getRequest().getD()).isEqualTo(1234.5678);
         assertThat(response.getRequest().getEnu()).isEqualTo(TestEnum.SECOND);
-        assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+        assertThat(response.getRequest().getNt().getF1()).isEqualTo("testAdvancedGetFromYaml");
     }
 
     @Test
     public void testBasicGetFromYaml() throws Exception {
         // /yaml_users/{s}/{uint3}/{nt.f1}
         String responseJson = resources().getJerseyTest()
-            .target("/yaml_users/string1/1234/abcd")
+            .target("/yaml_users/string1/1234/testBasicGetFromYaml")
             .request()
             .buildGet()
             .invoke(String.class);
@@ -252,7 +267,7 @@ public abstract class IntegrationBase {
 
         assertThat(response.getRequest().getS()).isEqualTo("string1");
         assertThat(response.getRequest().getUint3()).isEqualTo(1234);
-        assertThat(response.getRequest().getNt().getF1()).isEqualTo("abcd");
+        assertThat(response.getRequest().getNt().getF1()).isEqualTo("testBasicGetFromYaml");
         assertThat(false);
     }
 
@@ -340,8 +355,156 @@ public abstract class IntegrationBase {
     }
 
     @Test
+    public void testStreamGet_noMessages_returnsHeaders() throws Exception {
+        if (!supportsHttpHeaders()) {
+            return;
+        }
+
+        Response response = resources().getJerseyTest()
+                                       .target("/stream/hello")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "SECOND")
+                                       .queryParam("int3", "0")
+                                       .queryParam("x", "y")
+                                       .queryParam("nt.f1", "abcd")
+                                       .request()
+                                       .buildGet()
+                                       .invoke();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
+
+        int count = 0;
+        long now = System.currentTimeMillis();
+        while(true) {
+            String json = reader.readLine();
+
+            if(Strings.isNullOrEmpty(json))
+                break;
+
+            TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+            JsonFormat.parser().merge(json, responseFromJson);
+            TestResponse r = responseFromJson.build();
+
+            assertThat(r.getRequest().getS()).isEqualTo("hello");
+            assertThat(r.getRequest().getInt3()).isEqualTo(10);
+            assertThat(r.getRequest().getD()).isEqualTo(1234.5678);
+            assertThat(r.getRequest().getEnu()).isEqualTo(TestEnum.SECOND);
+            assertThat(r.getRequest().getNt().getF1()).isEqualTo("abcd");
+
+            count++;
+
+            long after = System.currentTimeMillis();
+            long duration = after - now;
+
+            // This might be flaky, but we want to ensure that we're actually streaming
+            assertThat(duration).isLessThan(1000/2);
+            now = after;
+        }
+
+        assertThat(count).isEqualTo(0);
+
+        assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
+    }
+
+
+    @Test
+    public void testStreamGet_withMessages_returnsHeaders() throws Exception {
+        if (!supportsHttpHeaders()) {
+            return;
+        }
+
+        Response response = resources().getJerseyTest()
+                                       .target("/stream/hello")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "SECOND")
+                                       .queryParam("int3", "10")
+                                       .queryParam("x", "y")
+                                       .queryParam("nt.f1", "abcd")
+                                       .request()
+                                       .buildGet()
+                                       .invoke();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
+
+        int count = 0;
+        long now = System.currentTimeMillis();
+        while(true) {
+            String json = reader.readLine();
+
+            if(Strings.isNullOrEmpty(json))
+                break;
+
+            TestResponse.Builder responseFromJson = TestResponse.newBuilder();
+            JsonFormat.parser().merge(json, responseFromJson);
+            TestResponse r = responseFromJson.build();
+
+            assertThat(r.getRequest().getS()).isEqualTo("hello");
+            assertThat(r.getRequest().getInt3()).isEqualTo(10);
+            assertThat(r.getRequest().getD()).isEqualTo(1234.5678);
+            assertThat(r.getRequest().getEnu()).isEqualTo(TestEnum.SECOND);
+            assertThat(r.getRequest().getNt().getF1()).isEqualTo("abcd");
+
+            count++;
+
+            long after = System.currentTimeMillis();
+            long duration = after - now;
+
+            // This might be flaky, but we want to ensure that we're actually streaming
+            assertThat(duration).isLessThan(1000/2);
+            now = after;
+        }
+
+        assertThat(count).isEqualTo(10);
+
+        assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
+    }
+
+
+    @Test
+    public void testStreamGet_immediateError_returnsHeaders() throws Exception {
+        if (!supportsHttpHeaders()) {
+            return;
+        }
+
+        Response response = resources().getJerseyTest()
+                                       .target("/stream/explode")
+                                       .queryParam("d", 1234.5678)
+                                       .queryParam("enu", "SECOND")
+                                       .queryParam("int3", "0")
+                                       .queryParam("x", "y")
+                                       .queryParam("nt.f1", "abcd")
+                                       .request()
+                                       .buildGet()
+                                       .invoke();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
+
+        String json = reader.readLine();
+        Status.Builder statusBuilder = Status.newBuilder();
+        JsonFormat.parser().merge(json, statusBuilder);
+
+        // As expected, Status loses "cause" and "details" after transmission.
+        // Normally, details would be set, but JsonFormat doesn't support serializing Any.
+        Status expected = Status
+                .newBuilder()
+                .setCode(2)
+                .setMessage("HTTP 500 (gRPC: UNKNOWN)")
+                .build();
+
+        assertThat(statusBuilder.build()).isEqualTo(expected);
+
+        assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
+    }
+
+    @Test
     public void testStreamGetStatusError() throws Exception {
-        InputStream response = resources().getJerseyTest()
+        Response response = resources().getJerseyTest()
                                        .target("/stream/grpc_data_loss")
                                        .queryParam("d", 1234.5678)
                                        .queryParam("enu", "SECOND")
@@ -350,9 +513,9 @@ public abstract class IntegrationBase {
                                        .queryParam("nt.f1", "abcd")
                                        .request()
                                        .buildGet()
-                                       .invoke(InputStream.class);
+                                       .invoke();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
 
         // int3 controls "successful" messages. Next request will throw.
         for (int i = 0; i < 10; i++) {
@@ -381,6 +544,10 @@ public abstract class IntegrationBase {
                 .build();
 
         assertThat(statusBuilder.build()).isEqualTo(expected);
+
+        if (supportsHttpHeaders()) {
+            assertThat(response.getHeaderString("X-Stream-Test")).isEqualTo("Hello, World!");
+        }
     }
 
     @Test
