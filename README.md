@@ -9,6 +9,7 @@ used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) proje
   * [Working with HTTP headers](#working-with-http-headers)
     * [Streaming](#streaming)
     * [Errors](#errors)
+    * [Headers in the main gRPC Metadata (deprecated)](#headers-in-the-main-grpc-metadata-deprecated)
   * [Streaming RPCs](#streaming-rpcs)
   * [Error handling](#error-handling)
     * [Error Translation](#error-translation)
