@@ -3,16 +3,15 @@ package com.fullcontact.rpc.jersey;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.ToString;
-import lombok.Value;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.ToString;
+import lombok.Value;
 
 /**
  * Parser for google.api.http path language,
@@ -27,8 +26,7 @@ import java.util.stream.Collectors;
  *
  * Parser supports all but the "Verb" clause which appears to be superfluous, and disallows nested variable segments.
  *
- * Parsed template trees also emit Jersey @PATH compatible paths with invocation of
- * {@link ParsedPath#toPath()}
+ * Parsed template trees also emit Jersey @PATH compatible paths with invocation of {@link ParsedPath#toPath()}
  *
  * @author Michael Rose (xorlev)
  */
@@ -40,11 +38,12 @@ public class PathParser {
         Parser parser = new Parser(path);
 
         List<Segment> segments = new ArrayList<>();
-        while(parser.hasNext()) {
+        while (parser.hasNext()) {
             Segment segment = parseSegment(parser);
 
-            if(segment != null)
+            if (segment != null) {
                 segments.add(segment);
+            }
         }
 
         return new ParsedPath(segments);
@@ -52,13 +51,15 @@ public class PathParser {
 
     private static Segment parseSegment(Parser parser) {
         // '/' is our segment separator
-        if(parser.peek() == '/')
+        if (parser.peek() == '/') {
             parser.next();
+        }
 
-        if(!parser.hasNext())
+        if (!parser.hasNext()) {
             return null;
+        }
 
-        switch(parser.peek()) {
+        switch (parser.peek()) {
             case '{':
                 return parseNamedVariable(parser);
             case '*':
@@ -72,23 +73,24 @@ public class PathParser {
         parser.next(); // consume '{'
         String name = parser.consumeToSeparator();
         List<Segment> segments = new ArrayList<>();
-        if(parser.peek() == '=') {
+        if (parser.peek() == '=') {
             parser.next();
             segments.add(parseSegment(parser));
 
             // Parse nested segments if available
-            while(parser.peek() == '/') {
+            while (parser.peek() == '/') {
                 parser.next();
                 Segment segment = parseSegment(parser);
 
-                if(segment instanceof NamedVariable)
+                if (segment instanceof NamedVariable) {
                     throw new ParseException("Variables cannot be nested.");
+                }
 
                 segments.add(segment);
             }
         }
 
-        if(parser.peek() == '}') {
+        if (parser.peek() == '}') {
             parser.next();
         } else {
             parser.throwException("Expected '}', found: " + parser.peek());
@@ -99,7 +101,7 @@ public class PathParser {
 
     private static Segment parseWildcard(Parser parser) {
         parser.next();
-        if(parser.peek() == '*') {
+        if (parser.peek() == '*') {
             parser.next();
             return GreedyWildcard.INSTANCE;
         } else {
@@ -108,18 +110,31 @@ public class PathParser {
     }
 
     private static Literal parseLiteral(Parser parser) {
-        if(parser.peek() == '/')
+        if (parser.peek() == '/') {
             parser.next();
+        }
 
-        if(parser.isSeparator())
+        if (parser.isSeparator()) {
             parser.throwException("Expected literal, found separator: " + parser.peek());
+        }
 
         String literal = parser.consumeToSeparator();
 
-        if(parser.hasNext() && parser.peek() != '/')
+        if (parser.hasNext() && parser.peek() != '/') {
             parser.throwException("Expected '/', found: " + parser.peek());
+        }
 
         return new Literal(literal);
+    }
+
+    public interface SegmentVisitor {
+        void visit(Literal literal);
+
+        void visit(NamedVariable namedVariable);
+
+        void visit(GreedyWildcard greedyWildcard);
+
+        void visit(Wildcard wildcard);
     }
 
     /**
@@ -148,8 +163,9 @@ public class PathParser {
         }
 
         public char next() {
-            if(!hasNext())
+            if (!hasNext()) {
                 throw new ParseException("Buffer overflow, tried to call next() with no remaining characters");
+            }
 
             return buffer[position++];
         }
@@ -160,7 +176,7 @@ public class PathParser {
 
         public String consumeToSeparator() {
             StringBuilder sb = new StringBuilder();
-            while(hasNext() && !isSeparator()) {
+            while (hasNext() && !isSeparator()) {
                 sb.append(next());
             }
 
@@ -171,8 +187,8 @@ public class PathParser {
             String path = new String(buffer);
 
             throw new ParseException(
-                "Unexpected character: " + peek() + " at position " + position
-                + " for in: " + path + (message.isEmpty() ? "." : ". " + message)
+                    "Unexpected character: " + peek() + " at position " + position
+                            + " for in: " + path + (message.isEmpty() ? "." : ". " + message)
             );
         }
     }
@@ -198,14 +214,16 @@ public class PathParser {
          * @return visitor provided
          */
         public <T extends SegmentVisitor> T visit(T visitor) {
-            for(Segment segment : segments)
+            for (Segment segment : segments) {
                 segment.accept(visitor);
+            }
 
             return visitor;
         }
 
         /**
          * Generates Jersey @PATH compatible path
+         *
          * @throws IllegalArgumentException if parsed path will not correctly map to a Jersey path, e.x. nested named
          * variables
          */
@@ -218,13 +236,6 @@ public class PathParser {
         public ParseException(String message) {
             super(message);
         }
-    }
-
-    public interface SegmentVisitor {
-        void visit(Literal literal);
-        void visit(NamedVariable namedVariable);
-        void visit(GreedyWildcard greedyWildcard);
-        void visit(Wildcard wildcard);
     }
 
     public static class JerseyPathSegmentVisitor implements SegmentVisitor {
@@ -259,10 +270,13 @@ public class PathParser {
     public abstract static class EmptySegmentVisitor implements SegmentVisitor {
         @Override
         public void visit(Literal literal) {}
+
         @Override
         public void visit(NamedVariable namedVariable) {}
+
         @Override
         public void visit(GreedyWildcard greedyWildcard) {}
+
         @Override
         public void visit(Wildcard wildcard) {}
     }
@@ -270,11 +284,12 @@ public class PathParser {
     @ToString
     abstract static class Segment {
         public abstract void accept(SegmentVisitor visitor);
+
         public abstract String toPath();
     }
 
     @Value
-    @EqualsAndHashCode(callSuper=false)
+    @EqualsAndHashCode(callSuper = false)
     public static class Literal extends Segment {
         String literal;
 
@@ -290,7 +305,7 @@ public class PathParser {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper=false)
+    @EqualsAndHashCode(callSuper = false)
     public static class GreedyWildcard extends Segment {
         public static GreedyWildcard INSTANCE = new GreedyWildcard();
 
@@ -308,7 +323,7 @@ public class PathParser {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper=false)
+    @EqualsAndHashCode(callSuper = false)
     public static class Wildcard extends Segment {
         public static Wildcard INSTANCE = new Wildcard();
 
@@ -326,10 +341,12 @@ public class PathParser {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper=false)
+    @EqualsAndHashCode(callSuper = false)
     public static class NamedVariable extends Segment {
-        @NonNull String name;
-        @NonNull ImmutableList<Segment> segments;
+        @NonNull
+        String name;
+        @NonNull
+        ImmutableList<Segment> segments;
 
         public NamedVariable(String name) {
             this(name, Collections.emptyList());
@@ -351,15 +368,16 @@ public class PathParser {
 
         @Override
         public String toPath() {
-            if(segments.isEmpty()) {
+            if (segments.isEmpty()) {
                 return "{" + name + "}";
             } else {
-                if(segments.stream().anyMatch(s -> s instanceof NamedVariable)) {
+                if (segments.stream().anyMatch(s -> s instanceof NamedVariable)) {
                     throw new IllegalArgumentException(
-                        "Jersey @PATH does not support nested named variables: " + this);
+                            "Jersey @PATH does not support nested named variables: " + this);
                 }
 
-                return "{" + name + ": " + segments.stream().map(Segment::toPath).collect(Collectors.joining("/")) + "}";
+                return "{" + name + ": " + segments.stream().map(Segment::toPath).collect(Collectors.joining("/"))
+                        + "}";
             }
         }
     }

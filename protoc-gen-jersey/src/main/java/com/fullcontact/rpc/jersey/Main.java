@@ -5,7 +5,6 @@ import com.google.common.io.ByteStreams;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.compiler.PluginProtos;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,7 +20,7 @@ public class Main {
     public static void main(String[] args) throws IOException, Descriptors.DescriptorValidationException {
         InputStream is = System.in;
 
-        if(args.length > 0) {
+        if (args.length > 0) {
             File replayFile = new File(args[0]);
             FileOutputStream fos = new FileOutputStream(replayFile);
 

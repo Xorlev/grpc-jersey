@@ -6,8 +6,8 @@ import java.util.Optional;
 import javax.ws.rs.core.Response;
 
 /**
- * Registry for (currently) JVM-global gRPC error handlers. This allows users to override the error handling
- * methodology without patching the library.
+ * Registry for (currently) JVM-global gRPC error handlers. This allows users to override the error handling methodology
+ * without patching the library.
  *
  * This class should be considered unstable, a more comprehensive plugin mechanism will be built in the future.
  */

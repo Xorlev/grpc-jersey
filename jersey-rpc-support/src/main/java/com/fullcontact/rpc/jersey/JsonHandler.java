@@ -9,8 +9,8 @@ public final class JsonHandler {
     private static JsonFormat.Parser PARSER = JsonFormat.parser();
     private static JsonFormat.Printer UNARY = JsonFormat.printer().includingDefaultValueFields();
     private static JsonFormat.Printer STREAM = JsonFormat.printer()
-                                                                .includingDefaultValueFields()
-                                                                .omittingInsignificantWhitespace();
+            .includingDefaultValueFields()
+            .omittingInsignificantWhitespace();
 
     private JsonHandler() {}
 

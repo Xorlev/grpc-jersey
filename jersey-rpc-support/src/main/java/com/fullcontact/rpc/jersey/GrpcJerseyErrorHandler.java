@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 import java.io.IOException;
-import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import javax.ws.rs.container.AsyncResponse;
@@ -33,8 +32,8 @@ public interface GrpcJerseyErrorHandler {
      * there isn't a real way to signal well-formed errors except via another streaming payload.
      *
      * @param t throwable raised.
-     * @return Literal string, if you want JSON-encoded data use the {@link JsonHandler#streamPrinter()} to
-     *         retain server-sent events compatibility. Return {@link Optional#empty()} to silently abort.
+     * @return Literal string, if you want JSON-encoded data use the {@link JsonHandler#streamPrinter()} to retain
+     * server-sent events compatibility. Return {@link Optional#empty()} to silently abort.
      * @throws IOException usually if serialization of errors break.
      */
     Optional<String> handleStreamingError(Throwable t) throws IOException;

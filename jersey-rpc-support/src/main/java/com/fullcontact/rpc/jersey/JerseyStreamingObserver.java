@@ -4,18 +4,17 @@ import com.fullcontact.rpc.jersey.HttpHeaderInterceptors.HttpHeaderClientInterce
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
-
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * gRPC StreamObserver which publishes JSON-formatted messages from a gRPC server stream. Uses underlying servlet.

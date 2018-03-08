@@ -1,7 +1,6 @@
 package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
-
 import com.fullcontact.rpc.jersey.yaml.YamlHttpConfig;
 import com.fullcontact.rpc.jersey.yaml.YamlHttpRule;
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -20,14 +19,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.protobuf.*;
+import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Value;
-
-import java.io.*;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Jersey JSON/proto REST gRPC gateway compiler
@@ -37,6 +41,36 @@ import java.util.stream.Collectors;
  * @author Michael Rose (xorlev)
  */
 public class CodeGenerator {
+
+    public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor,
+            PathParser.ParsedPath path) {
+        ImmutableList.Builder<PathParam> pathParams = ImmutableList.builder();
+        path.visit(new PathParser.EmptySegmentVisitor() {
+            @Override
+            public void visit(PathParser.NamedVariable namedVariable) {
+                ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor =
+                        ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, namedVariable.getName());
+
+                if (fieldDescriptor.isEmpty()) {
+                    throw new IllegalArgumentException("Couldn't find path param: " + namedVariable.getName()
+                            + " in input type: " + inputDescriptor.toProto());
+                }
+
+                Descriptors.FieldDescriptor descriptor = Iterables.getLast(fieldDescriptor);
+
+                if (descriptor.isMapField() || descriptor.isRepeated()) {
+                    throw new IllegalArgumentException(
+                            "Cannot map path param '" + namedVariable.getName() + "' as URL mapping is not supported " +
+                                    "for map or repeated field types."
+                    );
+                }
+
+                pathParams.add(new PathParam(namedVariable.getName(), fieldDescriptor));
+            }
+        });
+
+        return pathParams.build();
+    }
 
     public PluginProtos.CodeGeneratorResponse generate(PluginProtos.CodeGeneratorRequest request)
             throws Descriptors.DescriptorValidationException {
@@ -48,31 +82,31 @@ public class CodeGenerator {
         PluginProtos.CodeGeneratorResponse.Builder response = PluginProtos.CodeGeneratorResponse.newBuilder();
 
         List<Descriptors.FileDescriptor> fileDescriptors = Lists.newArrayList(
-            DescriptorProtos.MethodOptions.getDescriptor().getFile(),
-            AnnotationsProto.getDescriptor(),
-            HttpRule.getDescriptor().getFile()
+                DescriptorProtos.MethodOptions.getDescriptor().getFile(),
+                AnnotationsProto.getDescriptor(),
+                HttpRule.getDescriptor().getFile()
         );
 
         Optional<YamlHttpConfig> yamlConfig = YamlHttpConfig.getFromOptions(options);
 
-        for(DescriptorProtos.FileDescriptorProto fdProto : request.getProtoFileList()) {
+        for (DescriptorProtos.FileDescriptorProto fdProto : request.getProtoFileList()) {
             // Descriptors are provided in dependency-topological order
             // each time we collect a new FileDescriptor, we add it to a
             // mutable list of descriptors and append the entire dependency
             // chain to each new FileDescriptor to allow crossLink() to function.
             // TODO(xorlev): might have to be more selective about deps in future
             Descriptors.FileDescriptor fd = Descriptors.FileDescriptor.buildFrom(
-                fdProto, fileDescriptors.toArray(new Descriptors.FileDescriptor[] {})
+                    fdProto, fileDescriptors.toArray(new Descriptors.FileDescriptor[]{})
             );
             fileDescriptors.add(fd);
 
             // if type starts with a ".", it's in this package
             // otherwise it's fully qualified
             String protoPackage = fdProto.getPackage();
-            for(DescriptorProtos.DescriptorProto d : fdProto.getMessageTypeList()) {
+            for (DescriptorProtos.DescriptorProto d : fdProto.getMessageTypeList()) {
                 String prefix = ".";
 
-                if(!Strings.isNullOrEmpty(protoPackage)) {
+                if (!Strings.isNullOrEmpty(protoPackage)) {
                     prefix += protoPackage + ".";
                 }
 
@@ -81,34 +115,37 @@ public class CodeGenerator {
 
             // Find RPC methods with HTTP extensions
             List<ServiceAndMethod> methodsToGenerate = new ArrayList<>();
-            for(Descriptors.ServiceDescriptor serviceDescriptor : fd.getServices()) {
+            for (Descriptors.ServiceDescriptor serviceDescriptor : fd.getServices()) {
                 DescriptorProtos.ServiceDescriptorProto serviceDescriptorProto = serviceDescriptor.toProto();
-                for(DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
-                    String fullMethodName = serviceDescriptor.getFullName() +"." + methodProto.getName();
-                    if(yamlConfig.isPresent()) {   //Check to see if the rules are defined in the YAML
-                        for(YamlHttpRule rule : yamlConfig.get().getRules()) {
-                            if(rule.getSelector().equals(fullMethodName) || rule.getSelector().equals("*")) { //TODO:  com.foo.*
+                for (DescriptorProtos.MethodDescriptorProto methodProto : serviceDescriptorProto.getMethodList()) {
+                    String fullMethodName = serviceDescriptor.getFullName() + "." + methodProto.getName();
+                    if (yamlConfig.isPresent()) {   //Check to see if the rules are defined in the YAML
+                        for (YamlHttpRule rule : yamlConfig.get().getRules()) {
+                            if (rule.getSelector().equals(fullMethodName) || rule.getSelector()
+                                    .equals("*")) { //TODO:  com.foo.*
                                 DescriptorProtos.MethodOptions yamlOptions = DescriptorProtos.MethodOptions.newBuilder()
-                                    .setExtension(AnnotationsProto.http, rule.buildHttpRule())
-                                    .build();
+                                        .setExtension(AnnotationsProto.http, rule.buildHttpRule())
+                                        .build();
                                 methodProto = DescriptorProtos.MethodDescriptorProto.newBuilder()
-                                    .mergeFrom(methodProto)
-                                    .setOptions(yamlOptions)
-                                    .build();
+                                        .mergeFrom(methodProto)
+                                        .setOptions(yamlOptions)
+                                        .build();
                             }
                         }
                     }
-                    if(methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
+                    if (methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
                         // TODO(xorlev): support server streaming
-                        if(methodProto.getClientStreaming())
+                        if (methodProto.getClientStreaming()) {
                             throw new IllegalArgumentException("grpc-jersey does not support client streaming");
+                        }
 
                         methodsToGenerate.add(new ServiceAndMethod(serviceDescriptor, methodProto));
                     }
                 }
             }
-            if(!methodsToGenerate.isEmpty())
+            if (!methodsToGenerate.isEmpty()) {
                 generateResource(response, lookup, fdProto, methodsToGenerate, isProxy);
+            }
         }
 
         return response.build();
@@ -128,9 +165,9 @@ public class CodeGenerator {
         mustache.execute(writer, r);
 
         response.addFile(PluginProtos.CodeGeneratorResponse.File.newBuilder()
-                         .setContent(writer.toString())
-                         .setName(r.getFileName())
-                         .build());
+                .setContent(writer.toString())
+                .setName(r.getFileName())
+                .build());
 
         System.err.println(writer.toString());
     }
@@ -142,25 +179,24 @@ public class CodeGenerator {
      * @param fileDescriptorProto file descriptor of the origin service
      * @param methodSpecs list of methods in the given service
      * @param isProxy should this resource use client stubs or implbase?
-     * @return
      */
     @VisibleForTesting
     ResourceToGenerate buildResourceSpec(
-        Map<String, Descriptors.Descriptor> descriptorTable,
-        DescriptorProtos.FileDescriptorProto fileDescriptorProto,
-        List<ServiceAndMethod> methodSpecs,
-        boolean isProxy) {
+            Map<String, Descriptors.Descriptor> descriptorTable,
+            DescriptorProtos.FileDescriptorProto fileDescriptorProto,
+            List<ServiceAndMethod> methodSpecs,
+            boolean isProxy) {
         Descriptors.ServiceDescriptor serviceDescriptor = methodSpecs.get(0).getServiceDescriptor();
         DescriptorProtos.ServiceDescriptorProto sdp = methodSpecs.get(0).getServiceDescriptor().toProto();
         String packageName = ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto);
         String className = ProtobufDescriptorJavaUtil.jerseyResourceClassName(sdp);
-        String grpcImplClass = (isProxy)?
-                               ProtobufDescriptorJavaUtil.grpcStubClass(fileDescriptorProto, sdp):
-                               ProtobufDescriptorJavaUtil.grpcImplBaseClass(fileDescriptorProto, sdp);
+        String grpcImplClass = (isProxy) ?
+                ProtobufDescriptorJavaUtil.grpcStubClass(fileDescriptorProto, sdp) :
+                ProtobufDescriptorJavaUtil.grpcImplBaseClass(fileDescriptorProto, sdp);
         String fileName = packageName.replace('.', '/') + "/" + className + ".java";
 
         ImmutableList.Builder<ResourceMethodToGenerate> methods = ImmutableList.builder();
-        for(ServiceAndMethod sam : methodSpecs) {
+        for (ServiceAndMethod sam : methodSpecs) {
             Descriptors.Descriptor inputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getInputType());
             Descriptors.Descriptor outputDescriptor = descriptorTable.get(sam.getMethodDescriptor().getOutputType());
             List<ResourceMethodToGenerate> methodToGenerate = parseRule(sam, inputDescriptor, outputDescriptor);
@@ -168,15 +204,15 @@ public class CodeGenerator {
         }
 
         return ResourceToGenerate
-            .builder()
-            .serviceDescriptor(serviceDescriptor)
-            .javaPackage(ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto))
-            .className(className)
-            .grpcStub(grpcImplClass)
-            .methods(methods.build())
-            .isProxy(isProxy)
-            .fileName(fileName)
-            .build();
+                .builder()
+                .serviceDescriptor(serviceDescriptor)
+                .javaPackage(ProtobufDescriptorJavaUtil.javaPackage(fileDescriptorProto))
+                .className(className)
+                .grpcStub(grpcImplClass)
+                .methods(methods.build())
+                .isProxy(isProxy)
+                .fileName(fileName)
+                .build();
     }
 
     /**
@@ -191,21 +227,21 @@ public class CodeGenerator {
      */
     @VisibleForTesting
     ImmutableList<ResourceMethodToGenerate> parseRule(ServiceAndMethod sam,
-                                                      Descriptors.Descriptor inputDescriptor,
-                                                      Descriptors.Descriptor outputDescriptor) {
+            Descriptors.Descriptor inputDescriptor,
+            Descriptors.Descriptor outputDescriptor) {
         HttpRule baseRule = sam.getMethodDescriptor().getOptions().getExtension(AnnotationsProto.http);
 
         ImmutableList<HttpRule> rules = ImmutableList.<HttpRule>builder()
-            .add(baseRule)
-            .addAll(baseRule.getAdditionalBindingsList())
-            .build();
+                .add(baseRule)
+                .addAll(baseRule.getAdditionalBindingsList())
+                .build();
 
         ImmutableList.Builder<ResourceMethodToGenerate> methodsToGenerate = ImmutableList.builder();
         int methodIndex = 0;
-        for(HttpRule rule : rules) {
+        for (HttpRule rule : rules) {
             String method = rule.getPatternCase().toString();
             String path = "";
-            switch(rule.getPatternCase()) {
+            switch (rule.getPatternCase()) {
                 case GET:
                     path = rule.getGet();
                     break;
@@ -227,8 +263,9 @@ public class CodeGenerator {
                     throw new IllegalArgumentException("Pattern (GET,PUT,POST,DELETE,PATCH) must be set.");
             }
 
-            if(path.trim().isEmpty())
+            if (path.trim().isEmpty()) {
                 throw new IllegalArgumentException("rule path must be set");
+            }
 
             // TODO(xorlev): check for URL overlap
             PathParser.ParsedPath parsedPath = PathParser.parse(path);
@@ -236,75 +273,48 @@ public class CodeGenerator {
 
             String bodyFieldPath = Strings.emptyToNull(rule.getBody());
 
-            if(bodyFieldPath != null && !bodyFieldPath.equals("*")) {
+            if (bodyFieldPath != null && !bodyFieldPath.equals("*")) {
                 ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor =
-                    ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, bodyFieldPath);
+                        ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, bodyFieldPath);
 
-                if(fieldDescriptor.isEmpty()) {
+                if (fieldDescriptor.isEmpty()) {
                     List<String> pathSegments = Splitter.on('.').omitEmptyStrings().trimResults().splitToList(path);
 
-                    while(!pathSegments.isEmpty()) {
+                    while (!pathSegments.isEmpty()) {
                         pathSegments.remove(pathSegments.size() - 1);
 
                         fieldDescriptor = ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, bodyFieldPath);
 
-                        if(!fieldDescriptor.isEmpty()) {
+                        if (!fieldDescriptor.isEmpty()) {
                             // TODO: remove bodyFieldPath segments until we have a fieldDescriptor
                             List<String> availableFields = Iterables.getLast(fieldDescriptor).getMessageType()
-                                                                    .getFields()
-                                                                    .stream()
-                                                                    .map(Descriptors.FieldDescriptor::getName)
-                                                                    .collect(Collectors.toList());
+                                    .getFields()
+                                    .stream()
+                                    .map(Descriptors.FieldDescriptor::getName)
+                                    .collect(Collectors.toList());
                             throw new IllegalArgumentException("'body' attribute refers to non-existent field " +
-                                                               "'" + bodyFieldPath + "'. Available fields: " +
-                                                               availableFields);
+                                    "'" + bodyFieldPath + "'. Available fields: " +
+                                    availableFields);
                         }
                     }
                 }
             }
 
             methodsToGenerate.add(new ResourceMethodToGenerate(
-                sam.getMethodDescriptor().getName(),
-                method,
-                parsedPath.toPath(),
-                pathParams,
-                bodyFieldPath,
-                ProtobufDescriptorJavaUtil.genClassName(inputDescriptor),
-                ProtobufDescriptorJavaUtil.genClassName(outputDescriptor),
-                methodIndex++,
-                sam.getMethodDescriptor().hasClientStreaming(),
-                sam.getMethodDescriptor().hasServerStreaming()
+                    sam.getMethodDescriptor().getName(),
+                    method,
+                    parsedPath.toPath(),
+                    pathParams,
+                    bodyFieldPath,
+                    ProtobufDescriptorJavaUtil.genClassName(inputDescriptor),
+                    ProtobufDescriptorJavaUtil.genClassName(outputDescriptor),
+                    methodIndex++,
+                    sam.getMethodDescriptor().hasClientStreaming(),
+                    sam.getMethodDescriptor().hasServerStreaming()
             ));
         }
 
         return methodsToGenerate.build();
-    }
-
-    public static ImmutableList<PathParam> parsePathParams(Descriptors.Descriptor inputDescriptor, PathParser.ParsedPath path) {
-        ImmutableList.Builder<PathParam> pathParams = ImmutableList.builder();
-        path.visit(new PathParser.EmptySegmentVisitor() {
-            @Override
-            public void visit(PathParser.NamedVariable namedVariable) {
-                ImmutableList<Descriptors.FieldDescriptor> fieldDescriptor =
-                    ProtobufDescriptorJavaUtil.fieldPath(inputDescriptor, namedVariable.getName());
-
-                if(fieldDescriptor.isEmpty())
-                    throw new IllegalArgumentException("Couldn't find path param: " + namedVariable.getName()
-                                                       + " in input type: " + inputDescriptor.toProto());
-
-                Descriptors.FieldDescriptor descriptor = Iterables.getLast(fieldDescriptor);
-
-                if(descriptor.isMapField() || descriptor.isRepeated())
-                    throw new IllegalArgumentException(
-                        "Cannot map path param '" + namedVariable.getName() + "' as URL mapping is not supported " +
-                        "for map or repeated field types."
-                    );
-
-                pathParams.add(new PathParam(namedVariable.getName(), fieldDescriptor));
-            }
-        });
-
-        return pathParams.build();
     }
 
     @Value
@@ -346,8 +356,8 @@ public class CodeGenerator {
 
         List<String> descriptorPath() {
             return fieldDescriptor.stream()
-                .map(Descriptors.FieldDescriptor::getName)
-                .collect(Collectors.toList());
+                    .map(Descriptors.FieldDescriptor::getName)
+                    .collect(Collectors.toList());
         }
 
         String descriptorJoined() {

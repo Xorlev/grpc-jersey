@@ -22,19 +22,17 @@ public class ProxyIntegrationApp extends Application<Configuration> {
     @Override
     public void run(Configuration configuration, Environment environment) throws Exception {
         Server server = InProcessServerBuilder.forName("TestService")
-                                              .addService(GrpcJerseyPlatformInterceptors
-                                                      .intercept(new EchoTestService()))
-                                              .build();
+                .addService(GrpcJerseyPlatformInterceptors
+                        .intercept(new EchoTestService()))
+                .build();
         server.start();
 
         TestServiceGrpc.TestServiceStub stub =
-            TestServiceGrpc.newStub(InProcessChannelBuilder
-                                        .forName("TestService")
-                                        .usePlaintext(true)
-                                        .directExecutor()
-                                        .build());
-
-
+                TestServiceGrpc.newStub(InProcessChannelBuilder
+                        .forName("TestService")
+                        .usePlaintext(true)
+                        .directExecutor()
+                        .build());
 
         environment.jersey().register(new TestServiceGrpcJerseyResource(stub));
     }

@@ -1,15 +1,14 @@
 package com.fullcontact.rpc.jersey;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Test support class, exposes a Map of strings as UriInfo query params, wrapping the map as a MultivaluedMap (Jersey)

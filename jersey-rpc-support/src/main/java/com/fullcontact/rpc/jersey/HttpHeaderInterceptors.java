@@ -1,18 +1,32 @@
 package com.fullcontact.rpc.jersey;
 
-import com.fullcontact.rpc.Header;
-import com.fullcontact.rpc.Headers;
-import com.google.common.collect.*;
-import io.grpc.*;
-import io.grpc.protobuf.ProtoUtils;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-
 import static com.fullcontact.rpc.jersey.HttpHeaderContext.REQUEST_HEADERS;
 import static com.fullcontact.rpc.jersey.HttpHeaderContext.RESPONSE_HEADERS;
+
+import com.fullcontact.rpc.Header;
+import com.fullcontact.rpc.Headers;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
+import io.grpc.Context;
+import io.grpc.Contexts;
+import io.grpc.ForwardingClientCall;
+import io.grpc.ForwardingClientCallListener;
+import io.grpc.ForwardingServerCall;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
+import io.grpc.Status;
+import io.grpc.protobuf.ProtoUtils;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 
 public class HttpHeaderInterceptors {
     private static final Metadata.Key<Headers> HEADERS_KEY = ProtoUtils.keyForProto(Headers.getDefaultInstance());

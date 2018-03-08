@@ -4,11 +4,9 @@ import com.fullcontact.rpc.jersey.HttpHeaderInterceptors.HttpHeaderClientInterce
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
-
 import java.util.Optional;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 
 /**
  * gRPC StreamObserver which publishes to a Jersey AsyncResponse. Used for unary (singular request/response) semantics.

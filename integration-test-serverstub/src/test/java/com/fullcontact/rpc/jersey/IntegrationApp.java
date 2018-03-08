@@ -1,7 +1,6 @@
 package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.TestServiceGrpcJerseyResource;
-
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;

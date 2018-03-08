@@ -1,13 +1,13 @@
 package com.fullcontact.rpc.jersey;
 
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Test support class, exposes a Map of strings as UriInfo query params, wrapping the map as a MultivaluedMap (Jersey)

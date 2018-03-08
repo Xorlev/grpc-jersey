@@ -1,10 +1,11 @@
 package com.fullcontact.rpc.jersey;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fullcontact.rpc.NestedNestedType;
 import com.fullcontact.rpc.NestedType;
 import com.fullcontact.rpc.TestEnum;
 import com.fullcontact.rpc.TestRequest;
-
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.JsonFormat;
@@ -12,8 +13,6 @@ import io.grpc.Metadata;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test for {@link RequestParser}
@@ -27,21 +26,21 @@ public class RequestParserTest {
         TestRequest.Builder request = TestRequest.newBuilder();
 
         UriInfoMap uriInfoMap = new UriInfoMap()
-            .put("s", "string")
-            .put("bytearray", "string")
-            .put("boolean", "true")
-            .put("nt.f1", "2")
-            .put("uint3", "3000000000")
-            .put("int3", "2000000000")
-            .put("uint6", "10000000000000000000")
-            .put("int6", "9000000000000000000")
-            .put("f", "123.456")
-            .put("d", "123.456")
-            .put("enu", "SECOND")
-            .put("rep", "1")
-            .put("rep", "2")
-            .put("rep_str", "a")
-            .put("rep_str", "");
+                .put("s", "string")
+                .put("bytearray", "string")
+                .put("boolean", "true")
+                .put("nt.f1", "2")
+                .put("uint3", "3000000000")
+                .put("int3", "2000000000")
+                .put("uint6", "10000000000000000000")
+                .put("int6", "9000000000000000000")
+                .put("f", "123.456")
+                .put("d", "123.456")
+                .put("enu", "SECOND")
+                .put("rep", "1")
+                .put("rep", "2")
+                .put("rep_str", "a")
+                .put("rep_str", "");
 
         RequestParser.parseQueryParams(uriInfoMap, request);
 
@@ -65,15 +64,15 @@ public class RequestParserTest {
     @Test
     public void parseHeaders() throws Exception {
         HttpHeadersMap headersMap = new HttpHeadersMap()
-            .put("X-Grpc-RateLimit", "128")
-            .put("Content-Type", "application/json");
+                .put("X-Grpc-RateLimit", "128")
+                .put("Content-Type", "application/json");
 
         Metadata headers = RequestParser.parseHeaders(headersMap);
 
         assertThat(headers.get(Metadata.Key.of("X-Grpc-RateLimit", Metadata.ASCII_STRING_MARSHALLER)))
-            .isEqualTo("128");
+                .isEqualTo("128");
         assertThat(headers.get(Metadata.Key.of("Content-Type", Metadata.ASCII_STRING_MARSHALLER)))
-            .isEqualTo("application/json");
+                .isEqualTo("application/json");
     }
 
     @Test
@@ -139,8 +138,8 @@ public class RequestParserTest {
     public void handleBody__nested2() throws Exception {
         NestedNestedType nestedType = NestedNestedType.newBuilder().addF1("abc").build();
         TestRequest expected = TestRequest.newBuilder()
-                                          .setNt(NestedType.newBuilder().setNnt(nestedType).build())
-                                          .build();
+                .setNt(NestedType.newBuilder().setNnt(nestedType).build())
+                .build();
 
         // Output nested json only
         String json = JsonFormat.printer().print(nestedType);

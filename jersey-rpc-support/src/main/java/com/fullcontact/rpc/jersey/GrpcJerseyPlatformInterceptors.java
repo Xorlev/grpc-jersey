@@ -1,6 +1,8 @@
 package com.fullcontact.rpc.jersey;
 
-import io.grpc.*;
+import io.grpc.BindableService;
+import io.grpc.ServerInterceptors;
+import io.grpc.ServerServiceDefinition;
 
 /**
  * Common set of interceptors and mutations done to stubs + channels. Users who opt into using this utility class to

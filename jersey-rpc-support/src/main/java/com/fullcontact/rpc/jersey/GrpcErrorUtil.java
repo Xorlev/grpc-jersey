@@ -10,9 +10,8 @@ import com.google.rpc.RetryInfo;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.protobuf.ProtoUtils;
-import lombok.Value;
-
 import javax.ws.rs.core.Response;
+import lombok.Value;
 
 /**
  * Utilities for interfacing between HTTP/1.1 and GRPC
@@ -25,8 +24,10 @@ public class GrpcErrorUtil {
     public static final Metadata.Key<DebugInfo> DEBUG_INFO_KEY = ProtoUtils.keyForProto(DebugInfo.getDefaultInstance());
     public static final Metadata.Key<RetryInfo> RETRY_INFO_KEY = ProtoUtils.keyForProto(RetryInfo.getDefaultInstance());
 
+    private GrpcErrorUtil() {}
+
     public static int grpcToHttpStatus(io.grpc.Status status) {
-        switch(status.getCode()) {
+        switch (status.getCode()) {
             case OK:
                 return 200;
             case CANCELLED:
@@ -70,7 +71,7 @@ public class GrpcErrorUtil {
     public static GrpcError throwableToStatus(Throwable t) {
         Status status = Status.fromThrowable(t);
 
-        if(t instanceof InvalidProtocolBufferException) {
+        if (t instanceof InvalidProtocolBufferException) {
             status = Status.INVALID_ARGUMENT.withCause(t);
         }
 
@@ -81,29 +82,30 @@ public class GrpcErrorUtil {
         com.google.rpc.Status.Builder payload = com.google.rpc.Status.newBuilder();
         payload.setCode(status.getCode().value());
 
-        StringBuilder errorMessage = new StringBuilder("HTTP " + statusCode + " (gRPC: "+status.getCode().name()+")");
+        StringBuilder errorMessage = new StringBuilder(
+                "HTTP " + statusCode + " (gRPC: " + status.getCode().name() + ")");
 
-        if(!Strings.isNullOrEmpty(status.getDescription())) {
+        if (!Strings.isNullOrEmpty(status.getDescription())) {
             errorMessage.append(": ").append(Strings.nullToEmpty(status.getDescription()));
         }
 
         payload.setMessage(errorMessage.toString());
 
-        if(trailer != null) {
-            if(trailer.containsKey(RETRY_INFO_KEY)) {
+        if (trailer != null) {
+            if (trailer.containsKey(RETRY_INFO_KEY)) {
                 RetryInfo retryInfo = trailer.get(RETRY_INFO_KEY);
                 payload.addDetails(Any.pack(retryInfo));
             }
 
-            if(trailer.containsKey(DEBUG_INFO_KEY)) {
+            if (trailer.containsKey(DEBUG_INFO_KEY)) {
                 DebugInfo debugInfo = trailer.get(DEBUG_INFO_KEY);
                 payload.addDetails(Any.pack(debugInfo));
             }
         }
 
         return new GrpcError(
-            status,
-            payload.build()
+                status,
+                payload.build()
         );
     }
 
@@ -114,18 +116,18 @@ public class GrpcErrorUtil {
         Response.ResponseBuilder httpResponse = Response.status(httpStatusCode);
 
         try {
-            for(Any extra : grpcError.getPayload().getDetailsList()) {
-                if(extra.is(RetryInfo.class)) {
+            for (Any extra : grpcError.getPayload().getDetailsList()) {
+                if (extra.is(RetryInfo.class)) {
                     RetryInfo retryInfo = extra.unpack(RetryInfo.class);
 
-                    if(retryInfo.hasRetryDelay()) {
+                    if (retryInfo.hasRetryDelay()) {
                         httpResponse.header("Retry-After", Durations.toSeconds(retryInfo.getRetryDelay()));
                     }
                 }
             }
 
             httpResponse.entity(JsonFormat.printer().print(grpcError.getPayload().toBuilder().clearDetails().build()));
-        } catch(InvalidProtocolBufferException e) {
+        } catch (InvalidProtocolBufferException e) {
             // this should never happen
             throw new RuntimeException(e);
         }
@@ -138,6 +140,4 @@ public class GrpcErrorUtil {
         Status status;
         com.google.rpc.Status payload;
     }
-
-    private GrpcErrorUtil() {}
 }

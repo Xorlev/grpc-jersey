@@ -1,5 +1,7 @@
 package com.fullcontact.rpc.jersey;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fullcontact.rpc.NestedType;
 import com.fullcontact.rpc.TestEnum;
 import com.fullcontact.rpc.TestRequest;
@@ -8,18 +10,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.protobuf.util.JsonFormat;
 import com.google.rpc.Status;
 import io.dropwizard.testing.junit.ResourceTestRule;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Response;
 import org.assertj.core.util.Strings;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.Response;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Base end-to-end Jersey tests
@@ -36,10 +35,10 @@ public abstract class IntegrationBase {
     public void testBasicGet() throws Exception {
         // /users/{s}/{uint3}/{nt.f1}
         String responseJson = resources().getJerseyTest()
-                                                 .target("/users/string1/1234/abcd")
-                                                 .request()
-                                                 .buildGet()
-                                                 .invoke(String.class);
+                .target("/users/string1/1234/abcd")
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -54,11 +53,11 @@ public abstract class IntegrationBase {
     public void testBasicGetWith1RepeatedIntParam() throws Exception {
         // /users/{s}/{uint3}/{nt.f1}?rep=1&rep=2&rep=3
         String responseJson = resources().getJerseyTest()
-                                                 .target("/users/string1/1234/abcd")
-                                                 .queryParam("rep", 1)
-                                                 .request()
-                                                 .buildGet()
-                                                 .invoke(String.class);
+                .target("/users/string1/1234/abcd")
+                .queryParam("rep", 1)
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -74,11 +73,11 @@ public abstract class IntegrationBase {
     public void testBasicGetWithRepeatedIntParam() throws Exception {
         // /users/{s}/{uint3}/{nt.f1}?rep=1&rep=2&rep=3
         String responseJson = resources().getJerseyTest()
-                                                 .target("/users/string1/1234/abcd")
-                                                 .queryParam("rep", 1, 2, 3)
-                                                 .request()
-                                                 .buildGet()
-                                                 .invoke(String.class);
+                .target("/users/string1/1234/abcd")
+                .queryParam("rep", 1, 2, 3)
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -94,11 +93,11 @@ public abstract class IntegrationBase {
     public void testBasicGetWithRepeatedStrParam() throws Exception {
         // /users/{s}/{uint3}/{nt.f1}?repStr=a&repStr=b&repStr=c
         String responseJson = resources().getJerseyTest()
-                                                 .target("/users/string1/1234/abcd")
-                                                 .queryParam("rep_str", "a", "b", "c")
-                                                 .request()
-                                                 .buildGet()
-                                                 .invoke(String.class);
+                .target("/users/string1/1234/abcd")
+                .queryParam("rep_str", "a", "b", "c")
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -114,11 +113,11 @@ public abstract class IntegrationBase {
     public void testBasicGetWithRepeatedEmptyStrParam() throws Exception {
         // /users/{s}/{uint3}/{nt.f1}?repStr=a&repStr=&repStr=b&repStr=
         String responseJson = resources().getJerseyTest()
-                                                 .target("/users/string1/1234/abcd")
-                                                 .queryParam("rep_str", "a", "", "b", "")
-                                                 .request()
-                                                 .buildGet()
-                                                 .invoke(String.class);
+                .target("/users/string1/1234/abcd")
+                .queryParam("rep_str", "a", "", "b", "")
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -133,15 +132,15 @@ public abstract class IntegrationBase {
     @Test
     public void testBasicPost() throws Exception {
         TestRequest request = TestRequest.newBuilder()
-            .setBoolean(true)
-            .setS("Hello")
-            .setNt(NestedType.newBuilder().setF1("World"))
-            .build();
+                .setBoolean(true)
+                .setS("Hello")
+                .setNt(NestedType.newBuilder().setF1("World"))
+                .build();
         String responseJson = resources().getJerseyTest()
-                 .target("/users/")
-                 .request()
-                 .buildPost(Entity.entity(JsonFormat.printer().print(request), "application/json; charset=utf-8"))
-                 .invoke(String.class);
+                .target("/users/")
+                .request()
+                .buildPost(Entity.entity(JsonFormat.printer().print(request), "application/json; charset=utf-8"))
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -154,11 +153,11 @@ public abstract class IntegrationBase {
     public void testPost__nestedBinding() throws Exception {
         NestedType request = NestedType.newBuilder().setF1("World").build();
         String responseJson = resources().getJerseyTest()
-                 .target("/users_nested/")
-                 .request()
-                 .buildPost(Entity.entity(JsonFormat.printer().print(request),
-                                          "application/json; charset=utf-8"))
-                 .invoke(String.class);
+                .target("/users_nested/")
+                .request()
+                .buildPost(Entity.entity(JsonFormat.printer().print(request),
+                        "application/json; charset=utf-8"))
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -171,17 +170,17 @@ public abstract class IntegrationBase {
     public void testAdvancedGet() throws Exception {
         // /users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         Response httpResponse = resources().getJerseyTest()
-                                       .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("uint3", "5678") // ensure path param has precedence
-                                       .queryParam("x", "y")
-                                       .request()
-                                       .header("grpc-jersey-Test", "Header")
-                                       .header("grpc-jersey-TestList", "1")
-                                       .header("grpc-jersey-TestList", "2")
-                                       .buildGet()
-                                       .invoke();
+                .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("uint3", "5678") // ensure path param has precedence
+                .queryParam("x", "y")
+                .request()
+                .header("grpc-jersey-Test", "Header")
+                .header("grpc-jersey-TestList", "1")
+                .header("grpc-jersey-TestList", "2")
+                .buildGet()
+                .invoke();
 
         String responseJson = httpResponse.readEntity(String.class);
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
@@ -208,14 +207,14 @@ public abstract class IntegrationBase {
     public void testAdvancedGet__defaultEnumInResponse() throws Exception {
         // /users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         String responseJson = resources().getJerseyTest()
-                                       .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "FIRST")
-                                       .queryParam("uint3", "5678") // ensure path param has precedence
-                                       .queryParam("x", "y")
-                                       .request()
-                                       .buildGet()
-                                       .invoke(String.class);
+                .target("/users/hello/string1/test/x/1234/abcd/foo/bar/baz/test")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "FIRST")
+                .queryParam("uint3", "5678") // ensure path param has precedence
+                .queryParam("x", "y")
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         // We want to ensure this is always set despite the fact that FIRST=0 which is not normally serialized.
         // Since this is intended to work with other systems (such as frontends or non-Java systems without compiled
@@ -232,14 +231,14 @@ public abstract class IntegrationBase {
     public void testAdvancedGetFromYaml() throws Exception {
         // /yaml_users/{s=hello/**}/x/{uint3}/{nt.f1}/*/**/test
         String responseJson = resources().getJerseyTest()
-            .target("/yaml_users/hello/string1/test/x/1234/testAdvancedGetFromYaml/foo/bar/baz/test")
-            .queryParam("d", 1234.5678)
-            .queryParam("enu", "SECOND")
-            .queryParam("uint3", "5678") // ensure path param has precedence
-            .queryParam("x", "y")
-            .request()
-            .buildGet()
-            .invoke(String.class);
+                .target("/yaml_users/hello/string1/test/x/1234/testAdvancedGetFromYaml/foo/bar/baz/test")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("uint3", "5678") // ensure path param has precedence
+                .queryParam("x", "y")
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -256,10 +255,10 @@ public abstract class IntegrationBase {
     public void testBasicGetFromYaml() throws Exception {
         // /yaml_users/{s}/{uint3}/{nt.f1}
         String responseJson = resources().getJerseyTest()
-            .target("/yaml_users/string1/1234/testBasicGetFromYaml")
-            .request()
-            .buildGet()
-            .invoke(String.class);
+                .target("/yaml_users/string1/1234/testBasicGetFromYaml")
+                .request()
+                .buildGet()
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -274,15 +273,15 @@ public abstract class IntegrationBase {
     @Test
     public void testBasicPostYaml() throws Exception {
         TestRequest request = TestRequest.newBuilder()
-            .setBoolean(true)
-            .setS("Hello")
-            .setNt(NestedType.newBuilder().setF1("World"))
-            .build();
+                .setBoolean(true)
+                .setS("Hello")
+                .setNt(NestedType.newBuilder().setF1("World"))
+                .build();
         String responseJson = resources().getJerseyTest()
-            .target("/yaml_users/")
-            .request()
-            .buildPost(Entity.entity(JsonFormat.printer().print(request), "application/json; charset=utf-8"))
-            .invoke(String.class);
+                .target("/yaml_users/")
+                .request()
+                .buildPost(Entity.entity(JsonFormat.printer().print(request), "application/json; charset=utf-8"))
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -295,11 +294,11 @@ public abstract class IntegrationBase {
     public void testPost__nestedBindingYaml() throws Exception {
         NestedType request = NestedType.newBuilder().setF1("World").build();
         String responseJson = resources().getJerseyTest()
-            .target("/yaml_users_nested/")
-            .request()
-            .buildPost(Entity.entity(JsonFormat.printer().print(request),
-                "application/json; charset=utf-8"))
-            .invoke(String.class);
+                .target("/yaml_users_nested/")
+                .request()
+                .buildPost(Entity.entity(JsonFormat.printer().print(request),
+                        "application/json; charset=utf-8"))
+                .invoke(String.class);
 
         TestResponse.Builder responseFromJson = TestResponse.newBuilder();
         JsonFormat.parser().merge(responseJson, responseFromJson);
@@ -311,25 +310,26 @@ public abstract class IntegrationBase {
     @Test
     public void testStreamGet() throws Exception {
         InputStream response = resources().getJerseyTest()
-                                       .target("/stream/hello")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("int3", "10")
-                                       .queryParam("x", "y")
-                                       .queryParam("nt.f1", "abcd")
-                                       .request()
-                                       .buildGet()
-                                       .invoke(InputStream.class);
+                .target("/stream/hello")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("int3", "10")
+                .queryParam("x", "y")
+                .queryParam("nt.f1", "abcd")
+                .request()
+                .buildGet()
+                .invoke(InputStream.class);
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(response));
 
         int count = 0;
         long now = System.currentTimeMillis();
-        while(true) {
+        while (true) {
             String json = reader.readLine();
 
-            if(Strings.isNullOrEmpty(json))
+            if (Strings.isNullOrEmpty(json)) {
                 break;
+            }
 
             TestResponse.Builder responseFromJson = TestResponse.newBuilder();
             JsonFormat.parser().merge(json, responseFromJson);
@@ -347,7 +347,7 @@ public abstract class IntegrationBase {
             long duration = after - now;
 
             // This might be flaky, but we want to ensure that we're actually streaming
-            assertThat(duration).isLessThan(1000/2);
+            assertThat(duration).isLessThan(1000 / 2);
             now = after;
         }
 
@@ -361,15 +361,15 @@ public abstract class IntegrationBase {
         }
 
         Response response = resources().getJerseyTest()
-                                       .target("/stream/hello")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("int3", "0")
-                                       .queryParam("x", "y")
-                                       .queryParam("nt.f1", "abcd")
-                                       .request()
-                                       .buildGet()
-                                       .invoke();
+                .target("/stream/hello")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("int3", "0")
+                .queryParam("x", "y")
+                .queryParam("nt.f1", "abcd")
+                .request()
+                .buildGet()
+                .invoke();
 
         assertThat(response.getStatus()).isEqualTo(200);
 
@@ -377,11 +377,12 @@ public abstract class IntegrationBase {
 
         int count = 0;
         long now = System.currentTimeMillis();
-        while(true) {
+        while (true) {
             String json = reader.readLine();
 
-            if(Strings.isNullOrEmpty(json))
+            if (Strings.isNullOrEmpty(json)) {
                 break;
+            }
 
             TestResponse.Builder responseFromJson = TestResponse.newBuilder();
             JsonFormat.parser().merge(json, responseFromJson);
@@ -399,7 +400,7 @@ public abstract class IntegrationBase {
             long duration = after - now;
 
             // This might be flaky, but we want to ensure that we're actually streaming
-            assertThat(duration).isLessThan(1000/2);
+            assertThat(duration).isLessThan(1000 / 2);
             now = after;
         }
 
@@ -416,15 +417,15 @@ public abstract class IntegrationBase {
         }
 
         Response response = resources().getJerseyTest()
-                                       .target("/stream/hello")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("int3", "10")
-                                       .queryParam("x", "y")
-                                       .queryParam("nt.f1", "abcd")
-                                       .request()
-                                       .buildGet()
-                                       .invoke();
+                .target("/stream/hello")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("int3", "10")
+                .queryParam("x", "y")
+                .queryParam("nt.f1", "abcd")
+                .request()
+                .buildGet()
+                .invoke();
 
         assertThat(response.getStatus()).isEqualTo(200);
 
@@ -432,11 +433,12 @@ public abstract class IntegrationBase {
 
         int count = 0;
         long now = System.currentTimeMillis();
-        while(true) {
+        while (true) {
             String json = reader.readLine();
 
-            if(Strings.isNullOrEmpty(json))
+            if (Strings.isNullOrEmpty(json)) {
                 break;
+            }
 
             TestResponse.Builder responseFromJson = TestResponse.newBuilder();
             JsonFormat.parser().merge(json, responseFromJson);
@@ -454,7 +456,7 @@ public abstract class IntegrationBase {
             long duration = after - now;
 
             // This might be flaky, but we want to ensure that we're actually streaming
-            assertThat(duration).isLessThan(1000/2);
+            assertThat(duration).isLessThan(1000 / 2);
             now = after;
         }
 
@@ -471,15 +473,15 @@ public abstract class IntegrationBase {
         }
 
         Response response = resources().getJerseyTest()
-                                       .target("/stream/explode")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("int3", "0")
-                                       .queryParam("x", "y")
-                                       .queryParam("nt.f1", "abcd")
-                                       .request()
-                                       .buildGet()
-                                       .invoke();
+                .target("/stream/explode")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("int3", "0")
+                .queryParam("x", "y")
+                .queryParam("nt.f1", "abcd")
+                .request()
+                .buildGet()
+                .invoke();
 
         assertThat(response.getStatus()).isEqualTo(200);
 
@@ -505,15 +507,15 @@ public abstract class IntegrationBase {
     @Test
     public void testStreamGetStatusError() throws Exception {
         Response response = resources().getJerseyTest()
-                                       .target("/stream/grpc_data_loss")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("int3", "10")
-                                       .queryParam("x", "y")
-                                       .queryParam("nt.f1", "abcd")
-                                       .request()
-                                       .buildGet()
-                                       .invoke();
+                .target("/stream/grpc_data_loss")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("int3", "10")
+                .queryParam("x", "y")
+                .queryParam("nt.f1", "abcd")
+                .request()
+                .buildGet()
+                .invoke();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)));
 
@@ -521,8 +523,9 @@ public abstract class IntegrationBase {
         for (int i = 0; i < 10; i++) {
             String json = reader.readLine();
 
-            if(Strings.isNullOrEmpty(json))
+            if (Strings.isNullOrEmpty(json)) {
                 break;
+            }
 
             TestResponse.Builder responseFromJson = TestResponse.newBuilder();
             JsonFormat.parser().merge(json, responseFromJson);
@@ -553,15 +556,15 @@ public abstract class IntegrationBase {
     @Test
     public void testStreamGetUnhandledError() throws Exception {
         InputStream response = resources().getJerseyTest()
-                                       .target("/stream/explode")
-                                       .queryParam("d", 1234.5678)
-                                       .queryParam("enu", "SECOND")
-                                       .queryParam("int3", "10")
-                                       .queryParam("x", "y")
-                                       .queryParam("nt.f1", "abcd")
-                                       .request()
-                                       .buildGet()
-                                       .invoke(InputStream.class);
+                .target("/stream/explode")
+                .queryParam("d", 1234.5678)
+                .queryParam("enu", "SECOND")
+                .queryParam("int3", "10")
+                .queryParam("x", "y")
+                .queryParam("nt.f1", "abcd")
+                .request()
+                .buildGet()
+                .invoke(InputStream.class);
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(response));
 
@@ -569,8 +572,9 @@ public abstract class IntegrationBase {
         for (int i = 0; i < 10; i++) {
             String json = reader.readLine();
 
-            if(Strings.isNullOrEmpty(json))
+            if (Strings.isNullOrEmpty(json)) {
                 break;
+            }
 
             TestResponse.Builder responseFromJson = TestResponse.newBuilder();
             JsonFormat.parser().merge(json, responseFromJson);
@@ -595,10 +599,10 @@ public abstract class IntegrationBase {
     @Test
     public void testUnaryError() throws Exception {
         Response response = resources().getJerseyTest()
-                                       .target("/explode")
-                                       .request()
-                                       .buildGet()
-                                       .invoke();
+                .target("/explode")
+                .request()
+                .buildGet()
+                .invoke();
 
         Status.Builder statusBuilder = Status.newBuilder();
         JsonFormat.parser().merge(response.readEntity(String.class), statusBuilder);

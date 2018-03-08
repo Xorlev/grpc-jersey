@@ -3,15 +3,12 @@ package com.fullcontact.rpc.jersey;
 import com.fullcontact.rpc.TestRequest;
 import com.fullcontact.rpc.TestResponse;
 import com.fullcontact.rpc.TestServiceGrpc;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.protobuf.util.Durations;
 import com.google.rpc.DebugInfo;
 import com.google.rpc.RetryInfo;
-import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-
 import java.util.Map;
 
 /**
@@ -66,13 +63,12 @@ public class EchoTestService extends TestServiceGrpc.TestServiceImplBase {
     public void streamMethod1(TestRequest request, StreamObserver<TestResponse> responseObserver) {
         HttpHeaderContext.addResponseHeader("X-Stream-Test", "Hello, World!");
 
-        for(int i = 0; i < request.getInt3(); i++) {
+        for (int i = 0; i < request.getInt3(); i++) {
             responseObserver.onNext(TestResponse.newBuilder().setRequest(request).build());
 
             try {
                 Thread.sleep(100);
-            }
-            catch(InterruptedException e) {
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -102,6 +98,6 @@ public class EchoTestService extends TestServiceGrpc.TestServiceImplBase {
                 RetryInfo.newBuilder().setRetryDelay(Durations.fromSeconds(30)).build());
         responseObserver.onError(
                 Status.RESOURCE_EXHAUSTED
-                .asRuntimeException(metadata));
+                        .asRuntimeException(metadata));
     }
 }

@@ -15,15 +15,14 @@ public class Build {
         properties = new Properties();
         try {
             properties.load(Build.class.getResourceAsStream("/build.properties"));
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             // ignore
         }
     }
 
+    private Build() {} // not instantiable
+
     public static String version() {
         return properties.getProperty("version", "unknown");
     }
-
-    private Build() {} // not instantiable
 }

@@ -1,7 +1,6 @@
 package com.fullcontact.rpc.jersey;
 
 import com.fullcontact.rpc.jersey.util.ProtobufDescriptorJavaUtil;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -11,16 +10,14 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.UnsafeByteOperations;
-import com.google.protobuf.util.JsonFormat;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.MetadataUtils;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.UriInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.UriInfo;
 
 /**
  * Utility used by resource template to parse parameters
@@ -29,40 +26,41 @@ import java.util.Set;
  */
 public class RequestParser {
     public static <V extends Message> void parseQueryParams(UriInfo uriInfo,
-                                                            V.Builder builder,
-                                                            DescriptorProtos.FieldDescriptorProto... pathParams)
+            V.Builder builder,
+            DescriptorProtos.FieldDescriptorProto... pathParams)
             throws InvalidProtocolBufferException {
         parseQueryParams(uriInfo, builder, ImmutableList.copyOf(pathParams));
     }
+
     public static <V extends Message> void parseQueryParams(UriInfo uriInfo,
-                                                            V.Builder builder,
-                                                            List<DescriptorProtos.FieldDescriptorProto> pathParams)
+            V.Builder builder,
+            List<DescriptorProtos.FieldDescriptorProto> pathParams)
             throws InvalidProtocolBufferException {
         Set<DescriptorProtos.FieldDescriptorProto> pathDescriptors = Sets.newHashSet(pathParams);
 
-        for(String queryParam : uriInfo.getQueryParameters().keySet()) {
+        for (String queryParam : uriInfo.getQueryParameters().keySet()) {
             ImmutableList<Descriptors.FieldDescriptor> descriptors =
-                ProtobufDescriptorJavaUtil.fieldPath(builder.getDescriptorForType(), queryParam);
-            if(!descriptors.isEmpty()) {
+                    ProtobufDescriptorJavaUtil.fieldPath(builder.getDescriptorForType(), queryParam);
+            if (!descriptors.isEmpty()) {
                 Descriptors.FieldDescriptor field = Iterables.getLast(descriptors);
 
-                if(!pathDescriptors.contains(field.toProto())) {
+                if (!pathDescriptors.contains(field.toProto())) {
                     setFieldSafely(builder, queryParam, uriInfo.getQueryParameters().get(queryParam));
                 }
             }
         }
     }
 
-    public static  <T extends AbstractStub<T>> T parseHeaders(HttpHeaders headers, T stub){
+    public static <T extends AbstractStub<T>> T parseHeaders(HttpHeaders headers, T stub) {
         return MetadataUtils.attachHeaders(stub, parseHeaders(headers));
     }
 
-    public static Metadata parseHeaders(HttpHeaders headers){
+    public static Metadata parseHeaders(HttpHeaders headers) {
         Metadata newHeaders = new Metadata();
 
         headers.getRequestHeaders().forEach((k, v) -> {
-                newHeaders.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v.get(0));
-            }
+                    newHeaders.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v.get(0));
+                }
         );
 
         return newHeaders;
@@ -72,30 +70,31 @@ public class RequestParser {
             throws InvalidProtocolBufferException {
         setFieldSafely(builder, path, ImmutableList.of(value));
     }
-    
+
     public static void setFieldSafely(Message.Builder builder, String path, List<String> value)
             throws InvalidProtocolBufferException {
         Descriptors.Descriptor descriptor = builder.getDescriptorForType();
 
         ImmutableList<Descriptors.FieldDescriptor> fieldDescriptors =
-            ProtobufDescriptorJavaUtil.fieldPath(descriptor, path);
+                ProtobufDescriptorJavaUtil.fieldPath(descriptor, path);
 
         Message.Builder fieldBuilder = builder;
-        for(Descriptors.FieldDescriptor fieldDescriptor : fieldDescriptors) {
-            if(fieldDescriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE)
+        for (Descriptors.FieldDescriptor fieldDescriptor : fieldDescriptors) {
+            if (fieldDescriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
                 fieldBuilder = fieldBuilder.getFieldBuilder(fieldDescriptor);
+            }
         }
 
-        if(fieldDescriptors.isEmpty()) {
+        if (fieldDescriptors.isEmpty()) {
             throw new IllegalArgumentException("Path " + path + " doesn't exist from root: "
-                                               + builder.getDescriptorForType().getName());
+                    + builder.getDescriptorForType().getName());
         }
 
-        setFieldSafely(fieldBuilder, fieldDescriptors.get(fieldDescriptors.size()-1), value);
+        setFieldSafely(fieldBuilder, fieldDescriptors.get(fieldDescriptors.size() - 1), value);
     }
 
     public static void setFieldSafely(Message.Builder builder, Descriptors.FieldDescriptor fd, List<String> value)
-    throws InvalidProtocolBufferException {
+            throws InvalidProtocolBufferException {
         Object valueToSet = getValueFor(fd, value);
         builder.setField(fd, valueToSet);
     }
@@ -116,10 +115,11 @@ public class RequestParser {
         }
         return result;
     }
-    
-    private static Object getUnaryValueFor(Descriptors.FieldDescriptor fd, String value) throws InvalidProtocolBufferException {
+
+    private static Object getUnaryValueFor(Descriptors.FieldDescriptor fd, String value)
+            throws InvalidProtocolBufferException {
         try {
-            switch(fd.getType()) {
+            switch (fd.getType()) {
                 case DOUBLE:
                     return Double.parseDouble(value);
                 case FLOAT:
@@ -132,7 +132,7 @@ public class RequestParser {
                     return UnsafeByteOperations.unsafeWrap(value.getBytes());
                 case ENUM:
                     Descriptors.EnumValueDescriptor enumValueDescriptor =
-                        fd.getEnumType().findValueByName(value.toUpperCase());
+                            fd.getEnumType().findValueByName(value.toUpperCase());
                     return enumValueDescriptor; // TODO eh?
                 case INT32:
                     return Integer.parseInt(value);
@@ -148,7 +148,7 @@ public class RequestParser {
                 case SFIXED64:
                 case SINT64:
                     return Long.parseUnsignedLong(value);
-                    // all are unsigned 64-bit ints
+                // all are unsigned 64-bit ints
                 case GROUP:
                     // unsupported
                 case MESSAGE:
@@ -156,11 +156,11 @@ public class RequestParser {
                 default:
                     throw new InvalidProtocolBufferException("Unable to map " + fd + " to value: " + value);
             }
-        } catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new InvalidProtocolBufferException("Unable to map " + fd + " to value: " + value);
         }
     }
-    
+
     public static <V extends Message> void handleBody(
             String fieldPath,
             V.Builder builder,
@@ -169,26 +169,26 @@ public class RequestParser {
         // IDENT maps all body fields to nested proto
         // TODO: handle multiple levels of nesting
         Message.Builder toMerge;
-        if("*".equals(fieldPath)) {
+        if ("*".equals(fieldPath)) {
             toMerge = builder;
         } else {
             ImmutableList<Descriptors.FieldDescriptor> fieldDescriptors =
-                ProtobufDescriptorJavaUtil.fieldPath(builder.getDescriptorForType(), fieldPath);
+                    ProtobufDescriptorJavaUtil.fieldPath(builder.getDescriptorForType(), fieldPath);
 
-            if(fieldDescriptors.isEmpty()) {
+            if (fieldDescriptors.isEmpty()) {
                 // todo bad request
                 return;
             }
 
             toMerge = builder;
-            for(Descriptors.FieldDescriptor fd : fieldDescriptors) {
-                if(fd.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
+            for (Descriptors.FieldDescriptor fd : fieldDescriptors) {
+                if (fd.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
                     toMerge = toMerge.getFieldBuilder(fd);
                 }
             }
         }
 
-        if(toMerge != null) {
+        if (toMerge != null) {
             JsonHandler.parser().merge(body, toMerge);
         }
     }
