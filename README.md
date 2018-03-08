@@ -7,6 +7,8 @@ used by the [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) proje
   * [Operation modes](#operation-modes)
     * [HTTP and gRPC](#http-and-grpc)
   * [Working with HTTP headers](#working-with-http-headers)
+    * [Streaming](#streaming)
+    * [Errors](#errors)
   * [Streaming RPCs](#streaming-rpcs)
   * [Error handling](#error-handling)
     * [Error Translation](#error-translation)
