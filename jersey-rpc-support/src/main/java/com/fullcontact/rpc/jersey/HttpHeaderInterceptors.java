@@ -25,6 +25,7 @@ import io.grpc.Status;
 import io.grpc.protobuf.ProtoUtils;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -85,6 +86,8 @@ public class HttpHeaderInterceptors {
         private ImmutableMultimap<String, String> httpResponseHeaders = ImmutableMultimap.of();
         private boolean receivedHeaders = false;
 
+        private static final ConcurrentHashMap<String, Metadata.Key<String>> keyCache = new ConcurrentHashMap<>();
+
         HttpHeaderClientInterceptor(HttpHeaders httpRequestHeaders) {
             this.httpRequestHeaders = toMultimapFromJerseyHeaders(httpRequestHeaders);
         }
@@ -123,6 +126,24 @@ public class HttpHeaderInterceptors {
                                         receivedHeaders = true;
                                         httpResponseHeaders = toMultimapFromHeaders(metadata.get(HEADERS_KEY));
                                     }
+
+                                    if (HttpHeaderHandler.isIncludeGrpcResponseHeaders()) {
+                                        ImmutableMultimap.Builder<String, String> builder =
+                                                ImmutableMultimap.<String, String>builder().putAll(httpRequestHeaders);
+                                        for (String key : metadata.keys()) {
+                                            if (key.endsWith(Metadata.BINARY_HEADER_SUFFIX)
+                                                    || HttpHeaderHandler.getBlackListedHeaders().contains(key)) {
+                                                continue;
+                                            }
+
+                                            Iterable<String> values = metadata.getAll(getKey(key));
+                                            if (values != null) {
+                                                builder.putAll(key, values);
+                                            }
+                                        }
+
+                                        httpResponseHeaders = builder.build();
+                                    }
                                 }
                             }, headers);
                 }
@@ -141,6 +162,14 @@ public class HttpHeaderInterceptors {
             }
 
             return builder;
+        }
+
+        private Metadata.Key<String> getKey(String key) {
+            Metadata.Key<String> metadataKey = keyCache.get(key);
+            if (metadataKey == null) {
+                keyCache.putIfAbsent(key, Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER));
+            }
+            return keyCache.get(key);
         }
     }
 
