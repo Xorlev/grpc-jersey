@@ -5,6 +5,7 @@ import static com.fullcontact.rpc.jersey.HttpHeaderContext.RESPONSE_HEADERS;
 
 import com.fullcontact.rpc.Header;
 import com.fullcontact.rpc.Headers;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import io.grpc.CallOptions;
@@ -62,6 +63,10 @@ public class HttpHeaderInterceptors {
     }
 
     private static ImmutableMultimap<String, String> toMultimapFromHeaders(Headers headers) {
+        if (headers == null) {
+            return ImmutableMultimap.of();
+        }
+
         ImmutableMultimap.Builder<String, String> builder = ImmutableMultimap.builder();
         for (Header header : headers.getHeaderList()) {
             builder.put(header.getName(), header.getValue());
@@ -155,10 +160,8 @@ public class HttpHeaderInterceptors {
                 Metadata headers,
                 ServerCallHandler<ReqT, RespT> next) {
             Context context = Context.current();
-            // Set request headers if present on RPC.
-            if (headers.containsKey(HEADERS_KEY)) {
-                context = context.withValue(REQUEST_HEADERS, toMultimapFromHeaders(headers.get(HEADERS_KEY)));
-            }
+            context = context.withValues(REQUEST_HEADERS, toMultimapFromHeaders(headers.get(HEADERS_KEY)),
+                    RESPONSE_HEADERS, HashMultimap.create());
 
             ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT> simpleForwardingServerCall =
                     new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {

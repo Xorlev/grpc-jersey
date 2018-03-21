@@ -22,10 +22,8 @@ import java.util.Map;
  */
 @Beta
 public class HttpHeaderContext {
-    static final Context.Key<Multimap<String, String>> REQUEST_HEADERS = Context
-            .keyWithDefault("grpc-jersey-request-headers", HashMultimap.create());
-    static final Context.Key<Multimap<String, String>> RESPONSE_HEADERS = Context
-            .keyWithDefault("grpc-jersey-response-headers", HashMultimap.create());
+    static final Context.Key<Multimap<String, String>> REQUEST_HEADERS = Context.key("grpc-jersey-request-headers");
+    static final Context.Key<Multimap<String, String>> RESPONSE_HEADERS = Context.key("grpc-jersey-response-headers");
 
     private HttpHeaderContext() {} // Do not instantiate.
 
