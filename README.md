@@ -487,6 +487,9 @@ instances.
 
 ## Releases
 
+0.3.1
+ - Fix thread-safety issue with Context default values. Thanks @smartwjw. [#27](https://github.com/Xorlev/grpc-jersey/compare/b73afd3...0.3.1)
+
 0.3.0
  - First-class HTTP header support. HTTP request headers are read into and attached to the gRPC Context. Likewise,
    response headers can be controlled from within your RPC handler. See
