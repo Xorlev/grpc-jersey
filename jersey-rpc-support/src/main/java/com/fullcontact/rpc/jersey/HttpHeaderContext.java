@@ -22,8 +22,10 @@ import java.util.Map;
  */
 @Beta
 public class HttpHeaderContext {
-    static final Context.Key<Multimap<String, String>> REQUEST_HEADERS = Context.key("grpc-jersey-request-headers");
-    static final Context.Key<Multimap<String, String>> RESPONSE_HEADERS = Context.key("grpc-jersey-response-headers");
+    static final Context.Key<Multimap<String, String>> REQUEST_HEADERS =
+            Context.key("grpc-jersey-request-headers");
+    static final Context.Key<Multimap<String, String>> RESPONSE_HEADERS =
+            Context.key("grpc-jersey-response-headers");
 
     private HttpHeaderContext() {} // Do not instantiate.
 
@@ -33,7 +35,7 @@ public class HttpHeaderContext {
      * Not thread-safe.
      */
     public static void addResponseHeader(String name, String value) {
-        RESPONSE_HEADERS.get().put(name, value);
+        safeGetResponseHeaders().put(name, value);
     }
 
     /**
@@ -53,7 +55,7 @@ public class HttpHeaderContext {
      */
     public static void setResponseHeader(String name, Collection<String> value) {
         clearResponseHeader(name);
-        RESPONSE_HEADERS.get().putAll(name, value);
+        safeGetResponseHeaders().putAll(name, value);
     }
 
     /**
@@ -62,7 +64,7 @@ public class HttpHeaderContext {
      * Not thread-safe.
      */
     public static void clearResponseHeader(String name) {
-        RESPONSE_HEADERS.get().removeAll(name);
+        safeGetResponseHeaders().removeAll(name);
     }
 
     /**
@@ -71,35 +73,51 @@ public class HttpHeaderContext {
      * Not thread-safe.
      */
     public static void clearResponseHeaders() {
-        RESPONSE_HEADERS.get().clear();
+        safeGetResponseHeaders().clear();
     }
 
     /**
      * Returns an immutable copy of the request headers, if any.
      */
     public static ImmutableMultimap<String, String> requestHeaders() {
-        return ImmutableMultimap.copyOf(REQUEST_HEADERS.get());
+        return ImmutableMultimap.copyOf(safeGetRequestHeaders());
     }
 
     /**
      * Returns a immutable copy of the request headers, taking the first value of each header if there are multiple.
      */
     public static ImmutableMap<String, String> requestHeadersFirstValue() {
-        return firstValueFromEachKey(REQUEST_HEADERS.get());
+        return firstValueFromEachKey(safeGetRequestHeaders());
     }
 
     /**
      * Returns a immutable copy of the response headers.
      */
     public static ImmutableMultimap<String, String> responseHeaders() {
-        return ImmutableMultimap.copyOf(RESPONSE_HEADERS.get());
+        return ImmutableMultimap.copyOf(safeGetResponseHeaders());
     }
 
     /**
      * Returns a immutable copy of the response headers, taking the first value of each header if there are multiple.
      */
     public static ImmutableMap<String, String> responseHeadersFirstValue() {
-        return firstValueFromEachKey(RESPONSE_HEADERS.get());
+        return firstValueFromEachKey(safeGetResponseHeaders());
+    }
+
+    private static Multimap<String, String> safeGetRequestHeaders() {
+        if (REQUEST_HEADERS.get() == null) {
+            return ImmutableMultimap.of();
+        }
+
+        return REQUEST_HEADERS.get();
+    }
+
+    private static Multimap<String, String> safeGetResponseHeaders() {
+        if (RESPONSE_HEADERS.get() == null) {
+            return HashMultimap.create();
+        }
+
+        return RESPONSE_HEADERS.get();
     }
 
     private static ImmutableMap<String, String> firstValueFromEachKey(Multimap<String, String> multimap) {

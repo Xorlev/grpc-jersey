@@ -52,6 +52,11 @@ public class HttpHeaderInterceptors {
 
     private static Headers headersFromMultimap(Multimap<String, String> headers) {
         Headers.Builder builder = Headers.newBuilder();
+
+        if (headers == null) {
+            return builder.build();
+        }
+
         for (Map.Entry<String, String> header : headers.entries()) {
             builder.addHeader(Header.newBuilder()
                     .setName(header.getKey())
@@ -159,9 +164,10 @@ public class HttpHeaderInterceptors {
                 ServerCall<ReqT, RespT> call,
                 Metadata headers,
                 ServerCallHandler<ReqT, RespT> next) {
-            Context context = Context.current();
-            context = context.withValues(REQUEST_HEADERS, toMultimapFromHeaders(headers.get(HEADERS_KEY)),
-                    RESPONSE_HEADERS, HashMultimap.create());
+            Context context = Context.current()
+                    .withValues(
+                            REQUEST_HEADERS, toMultimapFromHeaders(headers.get(HEADERS_KEY)),
+                            RESPONSE_HEADERS, HashMultimap.create());
 
             ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT> simpleForwardingServerCall =
                     new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
