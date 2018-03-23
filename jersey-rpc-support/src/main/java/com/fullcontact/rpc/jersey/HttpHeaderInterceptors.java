@@ -169,20 +169,23 @@ public class HttpHeaderInterceptors {
                             REQUEST_HEADERS, toMultimapFromHeaders(headers.get(HEADERS_KEY)),
                             RESPONSE_HEADERS, HashMultimap.create());
 
+            boolean sideChannelOn = headers.containsKey(HEADERS_KEY);
             ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT> simpleForwardingServerCall =
                     new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
                         private boolean sentHeaders = false;
 
                         @Override
                         public void sendHeaders(Metadata headers) {
-                            headers.put(HEADERS_KEY, headersFromMultimap(RESPONSE_HEADERS.get()));
+                            if(sideChannelOn) {
+                                headers.put(HEADERS_KEY, headersFromMultimap(RESPONSE_HEADERS.get()));
+                            }
                             sentHeaders = true;
                             super.sendHeaders(headers);
                         }
 
                         @Override
                         public void close(Status status, Metadata trailers) {
-                            if (!sentHeaders) {
+                            if (!sentHeaders && sideChannelOn) {
                                 trailers.put(HEADERS_KEY, headersFromMultimap(RESPONSE_HEADERS.get()));
                             }
 
