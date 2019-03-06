@@ -27,10 +27,12 @@ release.dependsOn([forceCandidate, forceRelease])
 task releaseSnapshot(dependsOn: [uploadMaven])
 
 // Ensure our versions look like the project status before publishing
-task verifyStatus << {
-    def hasSnapshot = version.contains('-SNAPSHOT')
-    if (project.status == 'snapshot' && !hasSnapshot) {
-        throw new GradleException("Version (${version}) needs -SNAPSHOT if publishing snapshot")
+task verifyStatus {
+    doLast {
+        def hasSnapshot = version.contains('-SNAPSHOT')
+        if (project.status == 'snapshot' && !hasSnapshot) {
+            throw new GradleException("Version (${version}) needs -SNAPSHOT if publishing snapshot")
+        }
     }
 }
 uploadMaven.dependsOn(verifyStatus)

@@ -9,10 +9,17 @@ if (JavaVersion.current().isJava8Compatible()) {
     }
 }
 
+
 subprojects { project ->
     apply plugin: 'java' // Plugin as major conventions
+    apply plugin: 'io.franzbecker.gradle-lombok'
 
     sourceCompatibility = 1.8
+
+    javadoc {
+      classpath = configurations.compile + configurations.compileOnly
+      // failOnError = false
+    }
 
     // Restore status after Java plugin
     status = rootProject.status
@@ -36,16 +43,6 @@ subprojects { project ->
         extendsFrom configurations.javadoc
     }
 
-    // When outputing to an Ivy repo, we want to use the proper type field
-//    gradle.taskGraph.whenReady {
-////        def isNotMaven = !it.hasTask(project.uploadMavenCentral)
-////        if (isNotMaven) {
-//            def artifacts = project.configurations.sources.artifacts
-//            def sourceArtifact = artifacts.iterator().next()
-//            sourceArtifact.type = 'sources'
-////        }
-//    }
-
     artifacts {
         sources(sourcesJar) {
             // Weird Gradle quirk where type will be used for the extension, but only for sources
@@ -67,42 +64,8 @@ subprojects { project ->
     project.sourceSets {
         main.compileClasspath += project.configurations.provided
         main.runtimeClasspath -= project.configurations.provided
+
         test.compileClasspath += project.configurations.provided
         test.runtimeClasspath += project.configurations.provided
     }
-}
-
-//apply plugin: 'github-pages' // Used to create publishGhPages task
-//
-//def docTasks = [:]
-//[Javadoc,Groovydoc].each{ Class docClass ->
-//    def allSources = allprojects.tasks*.withType(docClass).flatten()*.source
-//    if (allSources) {
-//        def shortName = docClass.simpleName.toLowerCase()
-//        def docTask = task "aggregate${shortName.capitalize()}"(type: docClass, description: "Aggregate subproject ${shortName}s") {
-//            source = allSources
-//            doFirst {
-//                def classpaths = allprojects.findAll { it.plugins.hasPlugin(JavaPlugin) }.collect { it.sourceSets.main.compileClasspath }
-//                classpath = files(classpaths)
-//            }
-//        }
-//        docTasks[shortName] = docTask
-//        processGhPages.dependsOn(docTask)
-//    }
-//}
-//
-//githubPages {
-//    repoUri = "git@github.com:fullcontact/${rootProject.name}.git"
-//    pages {
-//        docTasks.each { shortName, docTask ->
-//            from(docTask.outputs.files) {
-//                into "docs/${shortName}"
-//            }
-//        }
-//    }
-//}
-
-// Generate wrapper, which is distributed as part of source to alleviate the need of installing gradle
-task createWrapper(type: Wrapper) {
-    gradleVersion = '3.2'
 }

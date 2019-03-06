@@ -1,6 +1,7 @@
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     apply from: file('gradle/buildscript.gradle'), to: buildscript
@@ -9,16 +10,18 @@ buildscript {
 plugins {
     id 'idea'
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '1.2.2'
-    id "com.google.osdetector" version "1.4.0"
-    id 'edu.sc.seis.launch4j' version '2.4.2'
+    id 'com.github.johnrengelman.shadow' version '4.0.2'
+    id "com.google.osdetector" version "1.6.2"
+    id 'edu.sc.seis.launch4j' version '2.4.4'
+    id 'net.ltgt.apt' version '0.10'
+    id 'io.franzbecker.gradle-lombok' version '2.1'
 }
 
 ext {
-    grpcVersion = "1.8.0"
+    grpcVersion = "1.19.0"
     jerseyVersion = "2.25.1"
-    lombokVersion = "1.16.18"
-    protobufVersion = "3.5.0"
+    lombokVersion = "1.18.6"
+    protobufVersion = "3.6.1"
 }
 
 allprojects {
@@ -32,10 +35,17 @@ apply from: file('gradle/convention.gradle')
 subprojects {
     apply plugin: 'java'
     apply plugin: 'project-report'
+    apply plugin: 'net.ltgt.apt'
+
+    lombok {
+        version = "$lombokVersion"
+        sha256 = ""
+    }
 
     group = "com.xorlev.${rootProject.name}"
 
     configurations.all {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'log4j', module: 'log4j'
     }
@@ -64,15 +74,19 @@ subprojects {
 
     dependencies {
         provided "org.projectlombok:lombok:${lombokVersion}"
-        compile 'org.slf4j:slf4j-api:1.7.10'
+
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+	      apt "org.projectlombok:lombok:${lombokVersion}"
+
+        compile 'org.slf4j:slf4j-api:1.7.25'
 
         testCompile "junit:junit:4.12"
         testCompile "org.assertj:assertj-core:3.1.0"
         testCompile "org.assertj:assertj-guava:3.1.0"
         testCompile "org.easymock:easymock:3.4"
         testCompile 'org.powermock:powermock-api-easymock:1.6.2'
-        testCompile('ch.qos.logback:logback-classic:1.0.13')
-        testCompile('ch.qos.logback:logback-core:1.0.13')
+        testCompile('ch.qos.logback:logback-classic:1.2.3')
+        testCompile('ch.qos.logback:logback-core:1.2.3')
     }
 }
 
@@ -89,6 +103,9 @@ project(":jersey-rpc-support") {
     }
 
     dependencies {
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        apt "org.projectlombok:lombok:${lombokVersion}"
+
         compile "com.google.protobuf:protobuf-java:${protobufVersion}"
         compile "com.google.protobuf:protobuf-java-util:${protobufVersion}"
         compile "io.grpc:grpc-protobuf:${grpcVersion}"
@@ -136,8 +153,8 @@ project(":protoc-gen-jersey") {
         compile "io.grpc:grpc-protobuf:${grpcVersion}"
         compile "io.grpc:grpc-stub:${grpcVersion}"
         compile "com.github.spullara.mustache.java:compiler:0.9.4"
-        compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.5"
-        compile "com.fasterxml.jackson.core:jackson-databind:2.8.5"
+        compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.7"
+        compile "com.fasterxml.jackson.core:jackson-databind:2.9.7"
 
         testCompile "org.glassfish.jersey.core:jersey-common:${jerseyVersion}"
     }
@@ -259,10 +276,10 @@ project(":integration-test-base") {
     dependencies {
         compile 'org.slf4j:jul-to-slf4j:1.7.21'
         testCompile project(':protoc-gen-jersey')
-        testCompile('io.dropwizard:dropwizard-core:1.0.5') {
+        testCompile('io.dropwizard:dropwizard-core:1.3.8') {
             exclude group: 'org.eclipse.jetty'
         }
-        testCompile('io.dropwizard:dropwizard-testing:1.0.5') {
+        testCompile('io.dropwizard:dropwizard-testing:1.3.8') {
             exclude group: 'org.eclipse.jetty'
         }
         testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
@@ -303,13 +320,13 @@ project(":integration-test-serverstub") {
     dependencies {
         testCompile(project(':integration-test-base').sourceSets.test.output)
         testCompile project(':protoc-gen-jersey')
-        testCompile('io.dropwizard:dropwizard-core:0.9.3') {
+        testCompile('io.dropwizard:dropwizard-core:1.3.8') {
             exclude group: 'org.eclipse.jetty'
         }
-        testCompile('io.dropwizard:dropwizard-testing:0.9.3') {
+        testCompile('io.dropwizard:dropwizard-testing:1.3.8') {
             exclude group: 'org.eclipse.jetty'
         }
-        testCompile group: 'io.dropwizard', name: 'dropwizard-jetty', version: '0.9.3'
+        testCompile group: 'io.dropwizard', name: 'dropwizard-jetty', version: '1.3.8'
         testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
     }
 
@@ -359,13 +376,13 @@ project(":integration-test-proxy") {
     dependencies {
         testCompile(project(':integration-test-base').sourceSets.test.output)
         testCompile project(':protoc-gen-jersey')
-        testCompile('io.dropwizard:dropwizard-core:0.9.3') {
+        testCompile('io.dropwizard:dropwizard-core:1.3.8') {
             exclude group: 'org.eclipse.jetty'
         }
-        testCompile('io.dropwizard:dropwizard-testing:0.9.3') {
+        testCompile('io.dropwizard:dropwizard-testing:1.3.8') {
             exclude group: 'org.eclipse.jetty'
         }
-        testCompile group: 'io.dropwizard', name: 'dropwizard-jetty', version: '0.9.3'
+        testCompile group: 'io.dropwizard', name: 'dropwizard-jetty', version: '1.3.8'
         testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
     }
 
