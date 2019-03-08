@@ -2,43 +2,4 @@ subprojects {
     // Cobertura
     apply plugin: 'cobertura'
     cobertura.coverageFormats = ['xml', 'html']
-
-//
-//    // Checkstyle
-//    apply plugin: 'checkstyle'
-//    checkstyle {
-//        ignoreFailures = true
-//        showViolations = false
-//        configFile = rootProject.file('codequality/checkstyle.xml')
-//    }
-//
-//    // Findbugs
-//    apply plugin: 'findbugs'
-//    findbugs {
-//        excludes = ['**/thrift/*.java']
-//        ignoreFailures = true
-//    }
-//
-//    tasks.withType(FindBugs) {
-//        reports {
-//            xml.enabled = false
-//            html.enabled = true
-//        }
-//    }
-//
-//    // PMD
-//    apply plugin: 'pmd'
-//    tasks.withType(Pmd) {
-//        ignoreFailures = true
-//        reports.html.enabled true
-//        excludes = ['**/thrift/*.java']
-//    }
-//
-//    apply plugin: 'cobertura'
-//    cobertura {
-//        sourceDirs = sourceSets.main.java.srcDirs
-//        format = 'xml'
-////        includes = ['**/*.java', '**/*.groovy']
-////        excludes = ['**/thrift/*.java']
-//    }
 }
